@@ -11,6 +11,7 @@
       --card-bg: #1e293b;
       --primary: #0d9488;
       --accent: #10b981;
+      --danger: #ef4444;
       --text: #f8fafc;
       --muted: #94a3b8;
     }
@@ -26,25 +27,14 @@
       background: linear-gradient(135deg, #134e4a 0%, #0f766e 100%);
       padding: 20px;
       border-radius: 18px;
+      text-align: center;
       box-shadow: 0 10px 25px rgba(13, 148, 136, 0.2);
       margin-bottom: 20px;
-      text-align: center;
     }
-    .balance-label {
-      font-size: 14px;
-      color: #99f6e4;
-      margin: 0;
-    }
-    .balance-value {
-      font-size: 32px;
-      font-weight: 700;
-      margin: 8px 0;
-    }
-    .nisaab-status {
-      font-size: 13px;
-      margin: 0;
-      color: #ccfbf1;
-    }
+    .balance-label { font-size: 14px; color: #99f6e4; margin: 0; }
+    .balance-value { font-size: 32px; font-weight: 700; margin: 8px 0; }
+    .nisaab-status { font-size: 13px; margin: 0; color: #ccfbf1; }
+
     .actions {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -60,41 +50,75 @@
       font-weight: 600;
       font-size: 14px;
       cursor: pointer;
-      transition: all 0.2s;
     }
-    .btn:active {
-      transform: scale(0.97);
-      background-color: #334155;
-    }
-    .goals-header {
-      font-size: 18px;
-      font-weight: 700;
-      margin-bottom: 12px;
-    }
+    .btn:active { background-color: #334155; }
+
     .goal-card {
       background-color: var(--card-bg);
       border: 1px solid #334155;
-      padding: 16px;
+      padding: 14px;
       border-radius: 14px;
+      margin-bottom: 10px;
+    }
+    .goal-info { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 8px; }
+    .progress-bar { background-color: #334155; border-radius: 8px; height: 8px; overflow: hidden; }
+    .progress-fill { background: linear-gradient(90deg, #0d9488, #10b981); height: 100%; }
+
+    /* Всплывающее окно (Модалка) */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 100;
+    }
+    .modal {
+      background: var(--card-bg);
+      border: 1px solid #334155;
+      border-radius: 18px;
+      padding: 20px;
+      width: 100%;
+      max-width: 320px;
+      box-sizing: border-box;
+    }
+    .modal h3 { margin-top: 0; margin-bottom: 16px; font-size: 18px; }
+    .input-field {
+      width: 100%;
+      padding: 12px;
       margin-bottom: 12px;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 16px;
+      box-sizing: border-box;
     }
-    .goal-info {
+    .modal-btns {
       display: flex;
-      justify-content: space-between;
-      font-size: 14px;
-      margin-bottom: 8px;
+      gap: 10px;
+      margin-top: 8px;
     }
-    .progress-bar {
-      background-color: #334155;
-      border-radius: 8px;
-      height: 10px;
-      overflow: hidden;
+    .btn-submit {
+      flex: 1;
+      background: var(--primary);
+      border: none;
+      color: white;
+      padding: 12px;
+      border-radius: 10px;
+      font-weight: bold;
+      cursor: pointer;
     }
-    .progress-fill {
-      background: linear-gradient(90deg, #0d9488, #10b981);
-      height: 100%;
-      border-radius: 8px;
-      transition: width 0.4s ease;
+    .btn-cancel {
+      flex: 1;
+      background: transparent;
+      border: 1px solid #475569;
+      color: var(--muted);
+      padding: 12px;
+      border-radius: 10px;
+      cursor: pointer;
     }
   </style>
 </head>
@@ -107,73 +131,197 @@
   </div>
 
   <div class="actions">
-    <button class="btn" onclick="sendAction('income')">➕ Доход</button>
-    <button class="btn" onclick="sendAction('expense')">➖ Расход</button>
-    <button class="btn" onclick="sendAction('goal')">🎯 Новая цель</button>
-    <button class="btn" onclick="sendAction('fund')">💰 В копилку</button>
+    <button class="btn" onclick="openModal('modal-income')">➕ Доход</button>
+    <button class="btn" onclick="openModal('modal-expense')">➖ Расход</button>
+    <button class="btn" onclick="openModal('modal-goal')">🎯 Новая цель</button>
+    <button class="btn" onclick="openModal('modal-fund')">💰 В копилку</button>
   </div>
 
-  <div class="goals-header">Цели накопления</div>
+  <h3 style="margin-bottom: 12px;">Цели накопления</h3>
   <div id="goals-container">
     <p style="color: var(--muted); font-size: 14px;">Целей пока нет</p>
   </div>
 
+  <!-- Модалка Дохода -->
+  <div class="modal-overlay" id="modal-income">
+    <div class="modal">
+      <h3>Записать доход</h3>
+      <input type="number" id="income-amount" class="input-field" placeholder="Сумма (₽)">
+      <div class="modal-btns">
+        <button class="btn-cancel" onclick="closeModal('modal-income')">Отмена</button>
+        <button class="btn-submit" onclick="submitIncome()">Сохранить</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модалка Расхода -->
+  <div class="modal-overlay" id="modal-expense">
+    <div class="modal">
+      <h3>Записать расход</h3>
+      <input type="number" id="expense-amount" class="input-field" placeholder="Сумма (₽)">
+      <select id="expense-category" class="input-field">
+        <option value="Еда">Еда</option>
+        <option value="Дом">Дом</option>
+        <option value="Транспорт">Транспорт</option>
+        <option value="Одежда">Одежда</option>
+        <option value="Разное">Разное</option>
+      </select>
+      <div class="modal-btns">
+        <button class="btn-cancel" onclick="closeModal('modal-expense')">Отмена</button>
+        <button class="btn-submit" onclick="submitExpense()">Сохранить</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модалка Новой цели -->
+  <div class="modal-overlay" id="modal-goal">
+    <div class="modal">
+      <h3>Новая цель</h3>
+      <input type="text" id="goal-name" class="input-field" placeholder="Название (напр. Хадж)">
+      <input type="number" id="goal-target" class="input-field" placeholder="Целевая сумма (₽)">
+      <div class="modal-btns">
+        <button class="btn-cancel" onclick="closeModal('modal-goal')">Отмена</button>
+        <button class="btn-submit" onclick="submitGoal()">Создать</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модалка Пополнения копилки -->
+  <div class="modal-overlay" id="modal-fund">
+    <div class="modal">
+      <h3>Пополнить копилку</h3>
+      <select id="fund-goal-select" class="input-field"></select>
+      <input type="number" id="fund-amount" class="input-field" placeholder="Сумма с баланса (₽)">
+      <div class="modal-btns">
+        <button class="btn-cancel" onclick="closeModal('modal-fund')">Отмена</button>
+        <button class="btn-submit" onclick="submitFund()">Перевести</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const tg = window.Telegram?.WebApp;
-    if (tg) {
-      tg.ready();
-      tg.expand();
-    }
+    if (tg) { tg.ready(); tg.expand(); }
 
-    const params = new URLSearchParams(window.location.search);
-    const balance = parseFloat(params.get('balance')) || 0;
-    const zakat = parseFloat(params.get('zakat')) || 0;
-    const nisaab = parseFloat(params.get('nisaab')) || 600000;
+    // Получаем user_id из Telegram WebApp
+    const userId = tg?.initDataUnsafe?.user?.id || 0;
     
-    document.getElementById('balance-text').innerText = `${balance.toLocaleString('ru-RU')} ₽`;
+    // Вставьте сюда HTTPS-адрес туннеля (настроим на шаге 3)
+    const API_URL = "https://ВАШ_ТУННЕЛЬ.trycloudflare.com";
 
-    const nisaabEl = document.getElementById('nisaab-text');
-    if (zakat > 0) {
-      nisaabEl.innerText = `Нисаб пройден! Обязательный закят: ${zakat.toLocaleString('ru-RU')} ₽`;
-      nisaabEl.style.color = '#34d399';
-      nisaabEl.style.fontWeight = 'bold';
-    } else {
-      nisaabEl.innerText = `Нисаб (${nisaab.toLocaleString('ru-RU')} ₽) не достигнут`;
-      nisaabEl.style.opacity = '0.8';
-    }
+    function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
-    try {
-      const rawGoals = params.get('goals');
-      if (rawGoals) {
-        const goals = JSON.parse(decodeURIComponent(rawGoals));
+    async function refreshData() {
+      try {
+        const res = await fetch(`${API_URL}/api/data?user_id=${userId}`);
+        const data = await res.json();
+        
+        document.getElementById('balance-text').innerText = `${data.balance.toLocaleString('ru-RU')} ₽`;
+        
+        const nisaabEl = document.getElementById('nisaab-text');
+        if (data.zakat > 0) {
+          nisaabEl.innerText = `Нисаб пройден! Закят (2.5%): ${data.zakat.toLocaleString('ru-RU')} ₽`;
+          nisaabEl.style.color = '#34d399';
+        } else {
+          nisaabEl.innerText = `Нисаб (${data.nisaab.toLocaleString('ru-RU')} ₽) не достигнут`;
+          nisaabEl.style.color = '#ccfbf1';
+        }
+
+        // Рендер целей
         const container = document.getElementById('goals-container');
-        if (goals.length > 0) {
+        const select = document.getElementById('fund-goal-select');
+        select.innerHTML = '';
+
+        if (data.goals && data.goals.length > 0) {
           container.innerHTML = '';
-          goals.forEach(goal => {
-            const percent = Math.min(100, Math.round((goal.current / goal.target) * 100)) || 0;
+          data.goals.forEach(g => {
+            const percent = Math.min(100, Math.round((g.current / g.target) * 100)) || 0;
             container.innerHTML += `
               <div class="goal-card">
                 <div class="goal-info">
-                  <strong>${goal.name}</strong>
-                  <span>${goal.current.toLocaleString('ru-RU')} / ${goal.target.toLocaleString('ru-RU')} ₽ (${percent}%)</span>
+                  <strong>${g.name}</strong>
+                  <span>${g.current.toLocaleString('ru-RU')} / ${g.target.toLocaleString('ru-RU')} ₽ (${percent}%)</span>
                 </div>
                 <div class="progress-bar">
                   <div class="progress-fill" style="width: ${percent}%;"></div>
                 </div>
               </div>
             `;
+            select.innerHTML += `<option value="${g.id}" data-name="${g.name}">${g.name}</option>`;
           });
+        } else {
+          container.innerHTML = `<p style="color: var(--muted); font-size: 14px;">Целей пока нет</p>`;
         }
+      } catch (err) {
+        console.error("Ошибка загрузки данных:", err);
       }
-    } catch (e) {
-      console.error(e);
     }
 
-    function sendAction(action) {
-      if (tg) {
-        tg.sendData(action);
-      }
+    async function submitIncome() {
+      const amount = parseFloat(document.getElementById('income-amount').value);
+      if (!amount || amount <= 0) return alert('Введите сумму');
+      
+      await fetch(`${API_URL}/api/transaction`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ user_id: userId, type: 'income', category: 'Пополнение', amount })
+      });
+      document.getElementById('income-amount').value = '';
+      closeModal('modal-income');
+      refreshData();
     }
+
+    async function submitExpense() {
+      const amount = parseFloat(document.getElementById('expense-amount').value);
+      const category = document.getElementById('expense-category').value;
+      if (!amount || amount <= 0) return alert('Введите сумму');
+      
+      await fetch(`${API_URL}/api/transaction`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ user_id: userId, type: 'expense', category, amount })
+      });
+      document.getElementById('expense-amount').value = '';
+      closeModal('modal-expense');
+      refreshData();
+    }
+
+    async function submitGoal() {
+      const name = document.getElementById('goal-name').value.trim();
+      const target = parseFloat(document.getElementById('goal-target').value);
+      if (!name || !target) return alert('Заполните поля');
+
+      await fetch(`${API_URL}/api/goal`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ user_id: userId, name, target })
+      });
+      document.getElementById('goal-name').value = '';
+      document.getElementById('goal-target').value = '';
+      closeModal('modal-goal');
+      refreshData();
+    }
+
+    async function submitFund() {
+      const select = document.getElementById('fund-goal-select');
+      const goalId = select.value;
+      const goalName = select.options[select.selectedIndex].getAttribute('data-name');
+      const amount = parseFloat(document.getElementById('fund-amount').value);
+      if (!goalId || !amount) return alert('Заполните поля');
+
+      await fetch(`${API_URL}/api/fund`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ user_id: userId, goal_id: goalId, goal_name: goalName, amount })
+      });
+      document.getElementById('fund-amount').value = '';
+      closeModal('modal-fund');
+      refreshData();
+    }
+
+    // Первичная загрузка данных при открытии
+    refreshData();
   </script>
 </body>
 </html>
