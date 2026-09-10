@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Халяль Финансы</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --primary: #0d9488;
+      --accent: #10b981;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+    }
+    body {
+      margin: 0;
+      padding: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text);
+      box-sizing: border-box;
+    }
+    .card {
+      background: linear-gradient(135deg, #134e4a 0%, #0f766e 100%);
+      padding: 20px;
+      border-radius: 18px;
+      box-shadow: 0 10px 25px rgba(13, 148, 136, 0.2);
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .balance-label {
+      font-size: 14px;
+      color: #99f6e4;
+      margin: 0;
+    }
+    .balance-value {
+      font-size: 32px;
+      font-weight: 700;
+      margin: 8px 0;
+    }
+    .nisaab-status {
+      font-size: 13px;
+      margin: 0;
+      color: #ccfbf1;
+    }
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+    .btn {
+      background-color: var(--card-bg);
+      border: 1px solid #334155;
+      color: var(--text);
+      padding: 12px;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn:active {
+      transform: scale(0.97);
+      background-color: #334155;
+    }
+    .goals-header {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+    .goal-card {
+      background-color: var(--card-bg);
+      border: 1px solid #334155;
+      padding: 16px;
+      border-radius: 14px;
+      margin-bottom: 12px;
+    }
+    .goal-info {
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+    .progress-bar {
+      background-color: #334155;
+      border-radius: 8px;
+      height: 10px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      background: linear-gradient(90deg, #0d9488, #10b981);
+      height: 100%;
+      border-radius: 8px;
+      transition: width 0.4s ease;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <p class="balance-label">Свободный баланс</p>
+    <div class="balance-value" id="balance-text">0 ₽</div>
+    <p class="nisaab-status" id="nisaab-text">Расчет закята...</p>
+  </div>
+
+  <div class="actions">
+    <button class="btn" onclick="sendAction('income')">➕ Доход</button>
+    <button class="btn" onclick="sendAction('expense')">➖ Расход</button>
+    <button class="btn" onclick="sendAction('goal')">🎯 Новая цель</button>
+    <button class="btn" onclick="sendAction('fund')">💰 В копилку</button>
+  </div>
+
+  <div class="goals-header">Цели накопления</div>
+  <div id="goals-container">
+    <p style="color: var(--muted); font-size: 14px;">Целей пока нет</p>
+  </div>
+
+  <script>
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+      tg.ready();
+      tg.expand();
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const balance = parseFloat(params.get('balance')) || 0;
+    const zakat = parseFloat(params.get('zakat')) || 0;
+    const nisaab = parseFloat(params.get('nisaab')) || 600000;
+    
+    document.getElementById('balance-text').innerText = `${balance.toLocaleString('ru-RU')} ₽`;
+
+    const nisaabEl = document.getElementById('nisaab-text');
+    if (zakat > 0) {
+      nisaabEl.innerText = `Нисаб пройден! Обязательный закят: ${zakat.toLocaleString('ru-RU')} ₽`;
+      nisaabEl.style.color = '#34d399';
+      nisaabEl.style.fontWeight = 'bold';
+    } else {
+      nisaabEl.innerText = `Нисаб (${nisaab.toLocaleString('ru-RU')} ₽) не достигнут`;
+      nisaabEl.style.opacity = '0.8';
+    }
+
+    try {
+      const rawGoals = params.get('goals');
+      if (rawGoals) {
+        const goals = JSON.parse(decodeURIComponent(rawGoals));
+        const container = document.getElementById('goals-container');
+        if (goals.length > 0) {
+          container.innerHTML = '';
+          goals.forEach(goal => {
+            const percent = Math.min(100, Math.round((goal.current / goal.target) * 100)) || 0;
+            container.innerHTML += `
+              <div class="goal-card">
+                <div class="goal-info">
+                  <strong>${goal.name}</strong>
+                  <span>${goal.current.toLocaleString('ru-RU')} / ${goal.target.toLocaleString('ru-RU')} ₽ (${percent}%)</span>
+                </div>
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: ${percent}%;"></div>
+                </div>
+              </div>
+            `;
+          });
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+
+    function sendAction(action) {
+      if (tg) {
+        tg.sendData(action);
+      }
+    }
+  </script>
+</body>
+</html>
