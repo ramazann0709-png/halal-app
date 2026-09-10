@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Халяль Финансы</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
       --bg-color: #0f172a;
@@ -22,6 +23,7 @@
       background-color: var(--bg-color);
       color: var(--text);
       box-sizing: border-box;
+      padding-bottom: 40px;
     }
     .card {
       background: linear-gradient(135deg, #134e4a 0%, #0f766e 100%);
@@ -53,6 +55,27 @@
     }
     .btn:active { background-color: #334155; }
 
+    .section-title {
+      font-size: 17px;
+      font-weight: 700;
+      margin: 24px 0 12px 0;
+    }
+
+    .chart-container {
+      background: var(--card-bg);
+      border: 1px solid #334155;
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    #expenseChart {
+      max-width: 260px;
+      max-height: 260px;
+    }
+
     .goal-card {
       background-color: var(--card-bg);
       border: 1px solid #334155;
@@ -64,7 +87,24 @@
     .progress-bar { background-color: #334155; border-radius: 8px; height: 8px; overflow: hidden; }
     .progress-fill { background: linear-gradient(90deg, #0d9488, #10b981); height: 100%; }
 
-    /* Всплывающее окно (Модалка) */
+    /* Список истории */
+    .history-item {
+      background-color: var(--card-bg);
+      border: 1px solid #334155;
+      padding: 12px 16px;
+      border-radius: 12px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .history-cat { font-size: 15px; font-weight: 600; margin: 0; }
+    .history-date { font-size: 12px; color: var(--muted); margin: 2px 0 0 0; }
+    .history-amount { font-size: 16px; font-weight: 700; }
+    .income-val { color: var(--accent); }
+    .expense-val { color: var(--danger); }
+
+    /* Всплывающие окна */
     .modal-overlay {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
@@ -96,11 +136,7 @@
       font-size: 16px;
       box-sizing: border-box;
     }
-    .modal-btns {
-      display: flex;
-      gap: 10px;
-      margin-top: 8px;
-    }
+    .modal-btns { display: flex; gap: 10px; margin-top: 8px; }
     .btn-submit {
       flex: 1;
       background: var(--primary);
@@ -137,9 +173,20 @@
     <button class="btn" onclick="openModal('modal-fund')">💰 В копилку</button>
   </div>
 
-  <h3 style="margin-bottom: 12px;">Цели накопления</h3>
+  <div class="section-title">📊 Аналитика расходов</div>
+  <div class="chart-container">
+    <canvas id="expenseChart"></canvas>
+    <p id="no-chart-data" style="color: var(--muted); font-size: 14px; margin: 10px 0 0 0; display: none;">Расходов пока нет</p>
+  </div>
+
+  <div class="section-title">🎯 Цели накопления</div>
   <div id="goals-container">
     <p style="color: var(--muted); font-size: 14px;">Целей пока нет</p>
+  </div>
+
+  <div class="section-title">⏱ История операций</div>
+  <div id="history-container">
+    <p style="color: var(--muted); font-size: 14px;">Операций пока нет</p>
   </div>
 
   <!-- Модалка Дохода -->
@@ -160,11 +207,12 @@
       <h3>Записать расход</h3>
       <input type="number" id="expense-amount" class="input-field" placeholder="Сумма (₽)">
       <select id="expense-category" class="input-field">
-        <option value="Еда">Еда</option>
-        <option value="Дом">Дом</option>
-        <option value="Транспорт">Транспорт</option>
-        <option value="Одежда">Одежда</option>
-        <option value="Разное">Разное</option>
+        <option value="Еда">🍔 Еда</option>
+        <option value="Транспорт">🚕 Транспорт</option>
+        <option value="Лекарства">💊 Лекарства</option>
+        <option value="Дом">🏠 Дом / Быт</option>
+        <option value="Одежда">👕 Одежда</option>
+        <option value="Разное">📦 Разное</option>
       </select>
       <div class="modal-btns">
         <button class="btn-cancel" onclick="closeModal('modal-expense')">Отмена</button>
@@ -203,11 +251,10 @@
     const tg = window.Telegram?.WebApp;
     if (tg) { tg.ready(); tg.expand(); }
 
-    // Получаем user_id из Telegram WebApp
     const userId = tg?.initDataUnsafe?.user?.id || 0;
-    
-    // Вставьте сюда HTTPS-адрес туннеля (настроим на шаге 3)
     const API_URL = "https://donor-excluded-afternoon-wake.trycloudflare.com";
+
+    let chartInstance = null;
 
     function openModal(id) { document.getElementById(id).style.display = 'flex'; }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
@@ -217,27 +264,30 @@
         const res = await fetch(`${API_URL}/api/data?user_id=${userId}`);
         const data = await res.json();
         
+        // Баланс и закят
         document.getElementById('balance-text').innerText = `${data.balance.toLocaleString('ru-RU')} ₽`;
-        
         const nisaabEl = document.getElementById('nisaab-text');
         if (data.zakat > 0) {
-          nisaabEl.innerText = `Нисаб пройден! Закят (2.5%): ${data.zakat.toLocaleString('ru-RU')} ₽`;
+          nisaabEl.innerText = `Нисаб пройден! Обязательный закят: ${data.zakat.toLocaleString('ru-RU')} ₽`;
           nisaabEl.style.color = '#34d399';
         } else {
           nisaabEl.innerText = `Нисаб (${data.nisaab.toLocaleString('ru-RU')} ₽) не достигнут`;
           nisaabEl.style.color = '#ccfbf1';
         }
 
-        // Рендер целей
-        const container = document.getElementById('goals-container');
+        // Обновление графика
+        renderChart(data.categories || []);
+
+        // Цели
+        const goalsContainer = document.getElementById('goals-container');
         const select = document.getElementById('fund-goal-select');
         select.innerHTML = '';
 
         if (data.goals && data.goals.length > 0) {
-          container.innerHTML = '';
+          goalsContainer.innerHTML = '';
           data.goals.forEach(g => {
             const percent = Math.min(100, Math.round((g.current / g.target) * 100)) || 0;
-            container.innerHTML += `
+            goalsContainer.innerHTML += `
               <div class="goal-card">
                 <div class="goal-info">
                   <strong>${g.name}</strong>
@@ -251,11 +301,78 @@
             select.innerHTML += `<option value="${g.id}" data-name="${g.name}">${g.name}</option>`;
           });
         } else {
-          container.innerHTML = `<p style="color: var(--muted); font-size: 14px;">Целей пока нет</p>`;
+          goalsContainer.innerHTML = `<p style="color: var(--muted); font-size: 14px;">Целей пока нет</p>`;
         }
+
+        // История операций
+        const historyContainer = document.getElementById('history-container');
+        if (data.history && data.history.length > 0) {
+          historyContainer.innerHTML = '';
+          data.history.forEach(t => {
+            const isInc = t.type === 'income';
+            historyContainer.innerHTML += `
+              <div class="history-item">
+                <div>
+                  <p class="history-cat">${t.category}</p>
+                  <p class="history-date">${t.date}</p>
+                </div>
+                <span class="history-amount ${isInc ? 'income-val' : 'expense-val'}">
+                  ${isInc ? '+' : '-'}${t.amount.toLocaleString('ru-RU')} ₽
+                </span>
+              </div>
+            `;
+          });
+        } else {
+          historyContainer.innerHTML = `<p style="color: var(--muted); font-size: 14px;">Операций пока нет</p>`;
+        }
+
       } catch (err) {
         console.error("Ошибка загрузки данных:", err);
       }
+    }
+
+    function renderChart(categories) {
+      const ctx = document.getElementById('expenseChart').getContext('2d');
+      const noDataEl = document.getElementById('no-chart-data');
+
+      if (categories.length === 0) {
+        if (chartInstance) chartInstance.destroy();
+        document.getElementById('expenseChart').style.display = 'none';
+        noDataEl.style.display = 'block';
+        return;
+      }
+
+      document.getElementById('expenseChart').style.display = 'block';
+      noDataEl.style.display = 'none';
+
+      const labels = categories.map(c => c.category);
+      const values = categories.map(c => c.total);
+
+      if (chartInstance) {
+        chartInstance.destroy();
+      }
+
+      chartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: values,
+            backgroundColor: ['#0d9488', '#3b82f6', '#f59e0b', '#ec4899', '#8b5cf6', '#10b981'],
+            borderWidth: 2,
+            borderColor: '#1e293b'
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: { color: '#f8fafc', boxWidth: 12, padding: 12 }
+            }
+          }
+        }
+      });
     }
 
     async function submitIncome() {
@@ -306,7 +423,7 @@
     async function submitFund() {
       const select = document.getElementById('fund-goal-select');
       const goalId = select.value;
-      const goalName = select.options[select.selectedIndex].getAttribute('data-name');
+      const goalName = select.options[select.selectedIndex]?.getAttribute('data-name');
       const amount = parseFloat(document.getElementById('fund-amount').value);
       if (!goalId || !amount) return alert('Заполните поля');
 
@@ -320,7 +437,6 @@
       refreshData();
     }
 
-    // Первичная загрузка данных при открытии
     refreshData();
   </script>
 </body>
