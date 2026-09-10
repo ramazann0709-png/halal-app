@@ -24,7 +24,7 @@
       background-color: var(--bg-color);
       color: var(--text);
       box-sizing: border-box;
-      padding-bottom: 40px;
+      padding-bottom: 50px;
     }
     .card {
       background: linear-gradient(135deg, #134e4a 0%, #0f766e 100%);
@@ -100,7 +100,7 @@
     }
     #expenseChart { max-width: 260px; max-height: 260px; }
 
-    /* Карточка долга */
+    /* Долги */
     .debt-card {
       background-color: var(--card-bg);
       border: 1px solid #334155;
@@ -164,10 +164,11 @@
     .progress-bar { background-color: #334155; border-radius: 8px; height: 8px; overflow: hidden; }
     .progress-fill { background: linear-gradient(90deg, #0d9488, #10b981); height: 100%; }
 
+    /* История операций с кнопкой отмены */
     .history-item {
       background-color: var(--card-bg);
       border: 1px solid #334155;
-      padding: 12px 16px;
+      padding: 12px 14px;
       border-radius: 12px;
       margin-bottom: 8px;
       display: flex;
@@ -176,14 +177,49 @@
     }
     .history-cat { font-size: 15px; font-weight: 600; margin: 0; }
     .history-date { font-size: 12px; color: var(--muted); margin: 2px 0 0 0; }
-    .history-amount { font-size: 16px; font-weight: 700; }
+    .history-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .history-amount { font-size: 15px; font-weight: 700; }
     .income-val { color: var(--accent); }
     .expense-val { color: var(--danger); }
+    
+    .btn-delete-item {
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: var(--danger);
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      cursor: pointer;
+      padding: 0;
+    }
 
+    /* Кнопка сброса внизу страницы */
+    .btn-reset-danger {
+      width: 100%;
+      background: transparent;
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      color: var(--danger);
+      padding: 14px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      margin-top: 30px;
+      cursor: pointer;
+    }
+
+    /* Модалки */
     .modal-overlay {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0, 0, 0, 0.7);
+      background: rgba(0, 0, 0, 0.75);
       display: none;
       align-items: center;
       justify-content: center;
@@ -199,7 +235,7 @@
       max-width: 320px;
       box-sizing: border-box;
     }
-    .modal h3 { margin-top: 0; margin-bottom: 16px; font-size: 18px; }
+    .modal h3 { margin-top: 0; margin-bottom: 14px; font-size: 18px; }
     .input-field {
       width: 100%;
       padding: 12px;
@@ -249,7 +285,6 @@
     <button class="btn btn-full" onclick="openModal('modal-debt')">🤝 Взял в долг (Записать долг)</button>
   </div>
 
-  <!-- Селектор периодов -->
   <div class="period-selector">
     <button class="period-btn" onclick="setPeriod('day', this)">День</button>
     <button class="period-btn" onclick="setPeriod('week', this)">Неделя</button>
@@ -257,30 +292,29 @@
     <button class="period-btn" onclick="setPeriod('all', this)">Всё время</button>
   </div>
 
-  <!-- Аналитика расходов -->
   <div class="section-title">📊 Аналитика расходов</div>
   <div class="chart-container">
     <canvas id="expenseChart"></canvas>
     <p id="no-chart-data" style="color: var(--muted); font-size: 14px; margin: 10px 0 0 0; display: none;">За этот период расходов нет</p>
   </div>
 
-  <!-- Блок долгов -->
-  <div class="section-title">🤝 График долгов (Кому вернуть)</div>
+  <div class="section-title">🤝 График долгов</div>
   <div id="debts-container">
     <p style="color: var(--muted); font-size: 14px;">Долгов нет, альхамдулиллях</p>
   </div>
 
-  <!-- Цели накопления -->
   <div class="section-title">🎯 Цели накопления</div>
   <div id="goals-container">
     <p style="color: var(--muted); font-size: 14px;">Целей пока нет</p>
   </div>
 
-  <!-- История -->
   <div class="section-title">⏱ История операций</div>
   <div id="history-container">
     <p style="color: var(--muted); font-size: 14px;">Операций пока нет</p>
   </div>
+
+  <!-- Кнопка сброса -->
+  <button class="btn-reset-danger" onclick="openModal('modal-reset')">⚠️ Сбросить все данные кошелька</button>
 
   <!-- Модалка Дохода -->
   <div class="modal-overlay" id="modal-income">
@@ -314,7 +348,7 @@
     </div>
   </div>
 
-  <!-- Модалка Нового долга -->
+  <!-- Модалка Долга -->
   <div class="modal-overlay" id="modal-debt">
     <div class="modal">
       <h3>Записать долг</h3>
@@ -369,6 +403,24 @@
     </div>
   </div>
 
+  <!-- Модалка Полного сброса (Защита от случайного нажатия) -->
+  <div class="modal-overlay" id="modal-reset">
+    <div class="modal">
+      <h3 style="color: var(--danger);">⚠️ Сброс кошелька</h3>
+      <p style="font-size: 13px; color: var(--muted); line-height: 1.4; margin-bottom: 12px;">
+        Это действие безвозвратно удалит все транзакции, цели и долги.
+      </p>
+      <p style="font-size: 13px; margin-bottom: 6px;">
+        Для подтверждения введите слово <b>СБРОСИТЬ</b>:
+      </p>
+      <input type="text" id="reset-confirm-input" class="input-field" placeholder="СБРОСИТЬ">
+      <div class="modal-btns">
+        <button class="btn-cancel" onclick="closeModal('modal-reset')">Отмена</button>
+        <button class="btn-submit" style="background: var(--danger);" onclick="submitReset()">Стереть всё</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const tg = window.Telegram?.WebApp;
     if (tg) { tg.ready(); tg.expand(); }
@@ -415,7 +467,7 @@
 
         renderChart(data.categories || []);
 
-        // График и карточки долгов
+        // Долги
         const debtsContainer = document.getElementById('debts-container');
         if (data.debts && data.debts.length > 0) {
           debtsContainer.innerHTML = '';
@@ -481,7 +533,7 @@
           goalsContainer.innerHTML = `<p style="color: var(--muted); font-size: 14px;">Целей пока нет</p>`;
         }
 
-        // История
+        // История операций с кнопкой отмены (✕)
         const historyContainer = document.getElementById('history-container');
         if (data.history && data.history.length > 0) {
           historyContainer.innerHTML = '';
@@ -493,9 +545,12 @@
                   <p class="history-cat">${t.category}</p>
                   <p class="history-date">${t.date}</p>
                 </div>
-                <span class="history-amount ${isInc ? 'income-val' : 'expense-val'}">
-                  ${isInc ? '+' : '-'}${t.amount.toLocaleString('ru-RU')} ₽
-                </span>
+                <div class="history-right">
+                  <span class="history-amount ${isInc ? 'income-val' : 'expense-val'}">
+                    ${isInc ? '+' : '-'}${t.amount.toLocaleString('ru-RU')} ₽
+                  </span>
+                  <button class="btn-delete-item" onclick="deleteTransaction(${t.id})">✕</button>
+                </div>
               </div>
             `;
           });
@@ -550,6 +605,32 @@
       });
     }
 
+    async function deleteTransaction(id) {
+      if (!confirm("Удалить эту операцию? Баланс и графики сразу пересчитаются.")) return;
+      await fetch(`${API_URL}/api/delete_transaction`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ user_id: userId, transaction_id: id })
+      });
+      refreshData();
+    }
+
+    async function submitReset() {
+      const inputVal = document.getElementById('reset-confirm-input').value.trim();
+      if (inputVal !== 'СБРОСИТЬ') {
+        return alert('Неверное слово. Для сброса введите точно: СБРОСИТЬ');
+      }
+      await fetch(`${API_URL}/api/reset_data`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ user_id: userId, confirmation: inputVal })
+      });
+      document.getElementById('reset-confirm-input').value = '';
+      closeModal('modal-reset');
+      refreshData();
+      alert('Все данные успешно очищены.');
+    }
+
     async function submitIncome() {
       const amount = parseFloat(document.getElementById('income-amount').value);
       if (!amount || amount <= 0) return alert('Введите сумму');
@@ -584,7 +665,7 @@
       const amount = parseFloat(document.getElementById('debt-amount').value);
       const dueDate = document.getElementById('debt-date').value;
 
-      if (!creditor || !amount || !dueDate) return alert('Заполните все поля (Имя, Сумма, Дата)');
+      if (!creditor || !amount || !dueDate) return alert('Заполните все поля');
 
       await fetch(`${API_URL}/api/debt`, {
         method: 'POST',
@@ -604,7 +685,7 @@
       const creditor = document.getElementById('pay-debt-creditor').value;
       const amount = parseFloat(document.getElementById('pay-debt-amount').value);
 
-      if (!amount || amount <= 0) return alert('Введите корректную сумму');
+      if (!amount || amount <= 0) return alert('Введите сумму');
 
       await fetch(`${API_URL}/api/pay_debt`, {
         method: 'POST',
