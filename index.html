@@ -55,10 +55,37 @@
     }
     .btn:active { background-color: #334155; }
 
+    /* Переключатель периодов */
+    .period-selector {
+      display: flex;
+      background-color: var(--card-bg);
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 4px;
+      margin-bottom: 16px;
+      gap: 4px;
+    }
+    .period-btn {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      padding: 8px 0;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .period-btn.active {
+      background: var(--primary);
+      color: #fff;
+    }
+
     .section-title {
       font-size: 17px;
       font-weight: 700;
-      margin: 24px 0 12px 0;
+      margin: 20px 0 12px 0;
     }
 
     .chart-container {
@@ -87,7 +114,6 @@
     .progress-bar { background-color: #334155; border-radius: 8px; height: 8px; overflow: hidden; }
     .progress-fill { background: linear-gradient(90deg, #0d9488, #10b981); height: 100%; }
 
-    /* Список истории */
     .history-item {
       background-color: var(--card-bg);
       border: 1px solid #334155;
@@ -104,7 +130,6 @@
     .income-val { color: var(--accent); }
     .expense-val { color: var(--danger); }
 
-    /* Всплывающие окна */
     .modal-overlay {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
@@ -173,10 +198,18 @@
     <button class="btn" onclick="openModal('modal-fund')">💰 В копилку</button>
   </div>
 
+  <!-- Панель переключения периодов -->
+  <div class="period-selector">
+    <button class="period-btn" onclick="setPeriod('day', this)">День</button>
+    <button class="period-btn" onclick="setPeriod('week', this)">Неделя</button>
+    <button class="period-btn active" onclick="setPeriod('month', this)">Месяц</button>
+    <button class="period-btn" onclick="setPeriod('all', this)">Всё время</button>
+  </div>
+
   <div class="section-title">📊 Аналитика расходов</div>
   <div class="chart-container">
     <canvas id="expenseChart"></canvas>
-    <p id="no-chart-data" style="color: var(--muted); font-size: 14px; margin: 10px 0 0 0; display: none;">Расходов пока нет</p>
+    <p id="no-chart-data" style="color: var(--muted); font-size: 14px; margin: 10px 0 0 0; display: none;">За этот период расходов нет</p>
   </div>
 
   <div class="section-title">🎯 Цели накопления</div>
@@ -255,30 +288,36 @@
     const API_URL = "https://donor-excluded-afternoon-wake.trycloudflare.com";
 
     let chartInstance = null;
+    let selectedPeriod = "month";
+
+    function setPeriod(period, btn) {
+      selectedPeriod = period;
+      document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      refreshData();
+    }
 
     function openModal(id) { document.getElementById(id).style.display = 'flex'; }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
     async function refreshData() {
       try {
-        const res = await fetch(`${API_URL}/api/data?user_id=${userId}`);
+        const res = await fetch(`${API_URL}/api/data?user_id=${userId}&period=${selectedPeriod}`);
         const data = await res.json();
         
-        // Баланс и закят
         document.getElementById('balance-text').innerText = `${data.balance.toLocaleString('ru-RU')} ₽`;
+        
         const nisaabEl = document.getElementById('nisaab-text');
         if (data.zakat > 0) {
-          nisaabEl.innerText = `Нисаб пройден! Обязательный закят: ${data.zakat.toLocaleString('ru-RU')} ₽`;
+          nisaabEl.innerText = `Нисаб ЦБ (${data.nisaab.toLocaleString('ru-RU')} ₽) пройден! Закят (2.5%): ${data.zakat.toLocaleString('ru-RU')} ₽`;
           nisaabEl.style.color = '#34d399';
         } else {
-          nisaabEl.innerText = `Нисаб (${data.nisaab.toLocaleString('ru-RU')} ₽) не достигнут`;
+          nisaabEl.innerText = `Нисаб (84.8г золота по ЦБ): ${data.nisaab.toLocaleString('ru-RU')} ₽ (не достигнут)`;
           nisaabEl.style.color = '#ccfbf1';
         }
 
-        // Обновление графика
         renderChart(data.categories || []);
 
-        // Цели
         const goalsContainer = document.getElementById('goals-container');
         const select = document.getElementById('fund-goal-select');
         select.innerHTML = '';
@@ -304,7 +343,6 @@
           goalsContainer.innerHTML = `<p style="color: var(--muted); font-size: 14px;">Целей пока нет</p>`;
         }
 
-        // История операций
         const historyContainer = document.getElementById('history-container');
         if (data.history && data.history.length > 0) {
           historyContainer.innerHTML = '';
@@ -323,7 +361,7 @@
             `;
           });
         } else {
-          historyContainer.innerHTML = `<p style="color: var(--muted); font-size: 14px;">Операций пока нет</p>`;
+          historyContainer.innerHTML = `<p style="color: var(--muted); font-size: 14px;">За этот период операций нет</p>`;
         }
 
       } catch (err) {
@@ -348,9 +386,7 @@
       const labels = categories.map(c => c.category);
       const values = categories.map(c => c.total);
 
-      if (chartInstance) {
-        chartInstance.destroy();
-      }
+      if (chartInstance) chartInstance.destroy();
 
       chartInstance = new Chart(ctx, {
         type: 'doughnut',
