@@ -26,6 +26,17 @@
       box-sizing: border-box;
       padding-bottom: 50px;
     }
+    .status-banner {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid var(--danger);
+      color: #fca5a5;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 13px;
+      margin-bottom: 16px;
+      display: none;
+      text-align: center;
+    }
     .card {
       background: linear-gradient(135deg, #134e4a 0%, #0f766e 100%);
       padding: 20px;
@@ -164,7 +175,7 @@
     .progress-bar { background-color: #334155; border-radius: 8px; height: 8px; overflow: hidden; }
     .progress-fill { background: linear-gradient(90deg, #0d9488, #10b981); height: 100%; }
 
-    /* История операций с кнопкой отмены */
+    /* История операций */
     .history-item {
       background-color: var(--card-bg);
       border: 1px solid #334155;
@@ -201,7 +212,7 @@
       padding: 0;
     }
 
-    /* Кнопка сброса внизу страницы */
+    /* Кнопка сброса */
     .btn-reset-danger {
       width: 100%;
       background: transparent;
@@ -270,6 +281,10 @@
   </style>
 </head>
 <body>
+
+  <div id="status-banner" class="status-banner">
+    ⚠️ Нет связи с сервером API. Проверьте запуск бота и активность туннеля.
+  </div>
 
   <div class="card">
     <p class="balance-label">Свободный баланс</p>
@@ -403,7 +418,7 @@
     </div>
   </div>
 
-  <!-- Модалка Полного сброса (Защита от случайного нажатия) -->
+  <!-- Модалка Полного сброса -->
   <div class="modal-overlay" id="modal-reset">
     <div class="modal">
       <h3 style="color: var(--danger);">⚠️ Сброс кошелька</h3>
@@ -422,12 +437,16 @@
   </div>
 
   <script>
-    const tg = window.Telegram?.WebApp;
-    if (tg) { tg.ready(); tg.expand(); }
-
-    const userId = tg?.initDataUnsafe?.user?.id || 0;
+    // ВСТАВЬТЕ СЮДА ВАШ АКТУАЛЬНЫЙ АДРЕС ТУННЕЛЯ (без слэша в конце):
     const API_URL = "https://donor-excluded-afternoon-wake.trycloudflare.com";
 
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+      tg.ready();
+      tg.expand();
+    }
+
+    const userId = tg?.initDataUnsafe?.user?.id || 0;
     let chartInstance = null;
     let selectedPeriod = "month";
 
@@ -450,18 +469,21 @@
     }
 
     async function refreshData() {
+      const banner = document.getElementById('status-banner');
       try {
         const res = await fetch(`${API_URL}/api/data?user_id=${userId}&period=${selectedPeriod}`);
+        if (!res.ok) throw new Error("HTTP error " + res.status);
         const data = await res.json();
         
-        document.getElementById('balance-text').innerText = `${data.balance.toLocaleString('ru-RU')} ₽`;
+        banner.style.display = 'none';
+        document.getElementById('balance-text').innerText = `${Number(data.balance || 0).toLocaleString('ru-RU')} ₽`;
         
         const nisaabEl = document.getElementById('nisaab-text');
         if (data.zakat > 0) {
-          nisaabEl.innerText = `Нисаб ЦБ (${data.nisaab.toLocaleString('ru-RU')} ₽) пройден! Закят: ${data.zakat.toLocaleString('ru-RU')} ₽`;
+          nisaabEl.innerText = `Нисаб ЦБ (${Number(data.nisaab || 0).toLocaleString('ru-RU')} ₽) пройден! Закят: ${Number(data.zakat || 0).toLocaleString('ru-RU')} ₽`;
           nisaabEl.style.color = '#34d399';
         } else {
-          nisaabEl.innerText = `Нисаб (84.8г золота по ЦБ): ${data.nisaab.toLocaleString('ru-RU')} ₽ (не достигнут)`;
+          nisaabEl.innerText = `Нисаб (84.8г золота по ЦБ): ${Number(data.nisaab || 0).toLocaleString('ru-RU')} ₽ (не достигнут)`;
           nisaabEl.style.color = '#ccfbf1';
         }
 
@@ -496,7 +518,7 @@
                 </div>
                 <div class="debt-footer">
                   <span style="font-size: 13px; color: var(--muted);">
-                    Отдано: <b>${d.paid_amount.toLocaleString('ru-RU')}</b> из <b>${d.amount.toLocaleString('ru-RU')} ₽</b>
+                    Отдано: <b>${Number(d.paid_amount).toLocaleString('ru-RU')}</b> из <b>${Number(d.amount).toLocaleString('ru-RU')} ₽</b>
                   </span>
                   <button class="btn-pay" onclick="openPayDebtModal(${d.id}, '${d.creditor_name}', ${remaining})">Вернуть</button>
                 </div>
@@ -520,7 +542,7 @@
               <div class="goal-card">
                 <div class="goal-info">
                   <strong>${g.name}</strong>
-                  <span>${g.current.toLocaleString('ru-RU')} / ${g.target.toLocaleString('ru-RU')} ₽ (${percent}%)</span>
+                  <span>${Number(g.current).toLocaleString('ru-RU')} / ${Number(g.target).toLocaleString('ru-RU')} ₽ (${percent}%)</span>
                 </div>
                 <div class="progress-bar">
                   <div class="progress-fill" style="width: ${percent}%;"></div>
@@ -533,7 +555,7 @@
           goalsContainer.innerHTML = `<p style="color: var(--muted); font-size: 14px;">Целей пока нет</p>`;
         }
 
-        // История операций с кнопкой отмены (✕)
+        // История операций
         const historyContainer = document.getElementById('history-container');
         if (data.history && data.history.length > 0) {
           historyContainer.innerHTML = '';
@@ -547,7 +569,7 @@
                 </div>
                 <div class="history-right">
                   <span class="history-amount ${isInc ? 'income-val' : 'expense-val'}">
-                    ${isInc ? '+' : '-'}${t.amount.toLocaleString('ru-RU')} ₽
+                    ${isInc ? '+' : '-'}${Number(t.amount).toLocaleString('ru-RU')} ₽
                   </span>
                   <button class="btn-delete-item" onclick="deleteTransaction(${t.id})">✕</button>
                 </div>
@@ -560,6 +582,7 @@
 
       } catch (err) {
         console.error("Ошибка загрузки данных:", err);
+        banner.style.display = 'block';
       }
     }
 
@@ -567,7 +590,7 @@
       const ctx = document.getElementById('expenseChart').getContext('2d');
       const noDataEl = document.getElementById('no-chart-data');
 
-      if (categories.length === 0) {
+      if (!categories || categories.length === 0) {
         if (chartInstance) chartInstance.destroy();
         document.getElementById('expenseChart').style.display = 'none';
         noDataEl.style.display = 'block';
@@ -607,12 +630,16 @@
 
     async function deleteTransaction(id) {
       if (!confirm("Удалить эту операцию? Баланс и графики сразу пересчитаются.")) return;
-      await fetch(`${API_URL}/api/delete_transaction`, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ user_id: userId, transaction_id: id })
-      });
-      refreshData();
+      try {
+        await fetch(`${API_URL}/api/delete_transaction`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ user_id: userId, transaction_id: id })
+        });
+        refreshData();
+      } catch (e) {
+        alert("Ошибка сети при удалении операции");
+      }
     }
 
     async function submitReset() {
@@ -620,29 +647,37 @@
       if (inputVal !== 'СБРОСИТЬ') {
         return alert('Неверное слово. Для сброса введите точно: СБРОСИТЬ');
       }
-      await fetch(`${API_URL}/api/reset_data`, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ user_id: userId, confirmation: inputVal })
-      });
-      document.getElementById('reset-confirm-input').value = '';
-      closeModal('modal-reset');
-      refreshData();
-      alert('Все данные успешно очищены.');
+      try {
+        await fetch(`${API_URL}/api/reset_data`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ user_id: userId, confirmation: inputVal })
+        });
+        document.getElementById('reset-confirm-input').value = '';
+        closeModal('modal-reset');
+        refreshData();
+        alert('Все данные успешно очищены.');
+      } catch (e) {
+        alert("Ошибка связи с сервером при сбросе данных");
+      }
     }
 
     async function submitIncome() {
       const amount = parseFloat(document.getElementById('income-amount').value);
       if (!amount || amount <= 0) return alert('Введите сумму');
       
-      await fetch(`${API_URL}/api/transaction`, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ user_id: userId, type: 'income', category: 'Пополнение', amount })
-      });
-      document.getElementById('income-amount').value = '';
-      closeModal('modal-income');
-      refreshData();
+      try {
+        await fetch(`${API_URL}/api/transaction`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ user_id: userId, type: 'income', category: 'Пополнение', amount })
+        });
+        document.getElementById('income-amount').value = '';
+        closeModal('modal-income');
+        refreshData();
+      } catch (e) {
+        alert("Ошибка связи с сервером. Проверьте туннель.");
+      }
     }
 
     async function submitExpense() {
@@ -650,14 +685,18 @@
       const category = document.getElementById('expense-category').value;
       if (!amount || amount <= 0) return alert('Введите сумму');
       
-      await fetch(`${API_URL}/api/transaction`, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ user_id: userId, type: 'expense', category, amount })
-      });
-      document.getElementById('expense-amount').value = '';
-      closeModal('modal-expense');
-      refreshData();
+      try {
+        await fetch(`${API_URL}/api/transaction`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ user_id: userId, type: 'expense', category, amount })
+        });
+        document.getElementById('expense-amount').value = '';
+        closeModal('modal-expense');
+        refreshData();
+      } catch (e) {
+        alert("Ошибка связи с сервером. Проверьте туннель.");
+      }
     }
 
     async function submitDebt() {
@@ -667,17 +706,20 @@
 
       if (!creditor || !amount || !dueDate) return alert('Заполните все поля');
 
-      await fetch(`${API_URL}/api/debt`, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ user_id: userId, creditor_name: creditor, amount, due_date: dueDate })
-      });
-
-      document.getElementById('debt-creditor').value = '';
-      document.getElementById('debt-amount').value = '';
-      document.getElementById('debt-date').value = '';
-      closeModal('modal-debt');
-      refreshData();
+      try {
+        await fetch(`${API_URL}/api/debt`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ user_id: userId, creditor_name: creditor, amount, due_date: dueDate })
+        });
+        document.getElementById('debt-creditor').value = '';
+        document.getElementById('debt-amount').value = '';
+        document.getElementById('debt-date').value = '';
+        closeModal('modal-debt');
+        refreshData();
+      } catch (e) {
+        alert("Ошибка связи с сервером.");
+      }
     }
 
     async function submitPayDebt() {
@@ -687,14 +729,17 @@
 
       if (!amount || amount <= 0) return alert('Введите сумму');
 
-      await fetch(`${API_URL}/api/pay_debt`, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ user_id: userId, debt_id: debtId, creditor_name: creditor, amount })
-      });
-
-      closeModal('modal-pay-debt');
-      refreshData();
+      try {
+        await fetch(`${API_URL}/api/pay_debt`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ user_id: userId, debt_id: debtId, creditor_name: creditor, amount })
+        });
+        closeModal('modal-pay-debt');
+        refreshData();
+      } catch (e) {
+        alert("Ошибка связи с сервером.");
+      }
     }
 
     async function submitGoal() {
@@ -702,15 +747,19 @@
       const target = parseFloat(document.getElementById('goal-target').value);
       if (!name || !target) return alert('Заполните поля');
 
-      await fetch(`${API_URL}/api/goal`, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ user_id: userId, name, target })
-      });
-      document.getElementById('goal-name').value = '';
-      document.getElementById('goal-target').value = '';
-      closeModal('modal-goal');
-      refreshData();
+      try {
+        await fetch(`${API_URL}/api/goal`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ user_id: userId, name, target })
+        });
+        document.getElementById('goal-name').value = '';
+        document.getElementById('goal-target').value = '';
+        closeModal('modal-goal');
+        refreshData();
+      } catch (e) {
+        alert("Ошибка связи с сервером.");
+      }
     }
 
     async function submitFund() {
@@ -720,14 +769,18 @@
       const amount = parseFloat(document.getElementById('fund-amount').value);
       if (!goalId || !amount) return alert('Заполните поля');
 
-      await fetch(`${API_URL}/api/fund`, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ user_id: userId, goal_id: goalId, goal_name: goalName, amount })
-      });
-      document.getElementById('fund-amount').value = '';
-      closeModal('modal-fund');
-      refreshData();
+      try {
+        await fetch(`${API_URL}/api/fund`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ user_id: userId, goal_id: goalId, goal_name: goalName, amount })
+        });
+        document.getElementById('fund-amount').value = '';
+        closeModal('modal-fund');
+        refreshData();
+      } catch (e) {
+        alert("Ошибка связи с сервером.");
+      }
     }
 
     refreshData();
