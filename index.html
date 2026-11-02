@@ -437,7 +437,6 @@
   </div>
 
   <script>
-    // ВСТАВЬТЕ СЮДА ВАШ АКТУАЛЬНЫЙ АДРЕС ТУННЕЛЯ (без слэша в конце):
     const API_URL = "https://footnote-caregiver-handwoven.ngrok-free.dev";
 
     const tg = window.Telegram?.WebApp;
@@ -446,9 +445,14 @@
       tg.expand();
     }
 
-    const userId = tg?.initDataUnsafe?.user?.id || 0;
+    const userId = tg?.initDataUnsafe?.user?.id || 1;
     let chartInstance = null;
     let selectedPeriod = "month";
+
+    const defaultHeaders = {
+      "Content-Type": "application/json",
+      "ngrok-skip-browser-warning": "true"
+    };
 
     function setPeriod(period, btn) {
       selectedPeriod = period;
@@ -471,7 +475,9 @@
     async function refreshData() {
       const banner = document.getElementById('status-banner');
       try {
-        const res = await fetch(`${API_URL}/api/data?user_id=${userId}&period=${selectedPeriod}`);
+        const res = await fetch(`${API_URL}/api/data?user_id=${userId}&period=${selectedPeriod}`, {
+          headers: defaultHeaders
+        });
         if (!res.ok) throw new Error("HTTP error " + res.status);
         const data = await res.json();
         
@@ -633,7 +639,7 @@
       try {
         await fetch(`${API_URL}/api/delete_transaction`, {
           method: 'POST',
-          headers: {'Content-Type': 'application/json'},
+          headers: defaultHeaders,
           body: JSON.stringify({ user_id: userId, transaction_id: id })
         });
         refreshData();
@@ -650,7 +656,7 @@
       try {
         await fetch(`${API_URL}/api/reset_data`, {
           method: 'POST',
-          headers: {'Content-Type': 'application/json'},
+          headers: defaultHeaders,
           body: JSON.stringify({ user_id: userId, confirmation: inputVal })
         });
         document.getElementById('reset-confirm-input').value = '';
@@ -669,7 +675,7 @@
       try {
         await fetch(`${API_URL}/api/transaction`, {
           method: 'POST',
-          headers: {'Content-Type': 'application/json'},
+          headers: defaultHeaders,
           body: JSON.stringify({ user_id: userId, type: 'income', category: 'Пополнение', amount })
         });
         document.getElementById('income-amount').value = '';
@@ -688,7 +694,7 @@
       try {
         await fetch(`${API_URL}/api/transaction`, {
           method: 'POST',
-          headers: {'Content-Type': 'application/json'},
+          headers: defaultHeaders,
           body: JSON.stringify({ user_id: userId, type: 'expense', category, amount })
         });
         document.getElementById('expense-amount').value = '';
@@ -709,7 +715,7 @@
       try {
         await fetch(`${API_URL}/api/debt`, {
           method: 'POST',
-          headers: {'Content-Type': 'application/json'},
+          headers: defaultHeaders,
           body: JSON.stringify({ user_id: userId, creditor_name: creditor, amount, due_date: dueDate })
         });
         document.getElementById('debt-creditor').value = '';
@@ -732,7 +738,7 @@
       try {
         await fetch(`${API_URL}/api/pay_debt`, {
           method: 'POST',
-          headers: {'Content-Type': 'application/json'},
+          headers: defaultHeaders,
           body: JSON.stringify({ user_id: userId, debt_id: debtId, creditor_name: creditor, amount })
         });
         closeModal('modal-pay-debt');
@@ -750,7 +756,7 @@
       try {
         await fetch(`${API_URL}/api/goal`, {
           method: 'POST',
-          headers: {'Content-Type': 'application/json'},
+          headers: defaultHeaders,
           body: JSON.stringify({ user_id: userId, name, target })
         });
         document.getElementById('goal-name').value = '';
@@ -772,7 +778,7 @@
       try {
         await fetch(`${API_URL}/api/fund`, {
           method: 'POST',
-          headers: {'Content-Type': 'application/json'},
+          headers: defaultHeaders,
           body: JSON.stringify({ user_id: userId, goal_id: goalId, goal_name: goalName, amount })
         });
         document.getElementById('fund-amount').value = '';
