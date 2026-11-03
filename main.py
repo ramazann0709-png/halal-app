@@ -2,7 +2,7 @@ import asyncio
 from aiohttp import web
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.types import Message, KeyboardButton, ReplyKeyboardMarkup, WebAppInfo
-from aiogram.filters import CommandStart
+from aiogram.filters import CommandStart, Command
 from db import (
     init_db,
     get_users_count,
@@ -13,7 +13,6 @@ from db import (
     add_money_to_goal,
     get_goal_progress,
     finish_goal,
-    get_expenses,
     get_transactions_history,
     create_debt,
     delete_transaction,
@@ -33,7 +32,7 @@ dp = Dispatcher()
 
 ADMIN_ID = 8774039431
 
-@dp.message(F.text == "/stats")
+@dp.message(Command("stats"))
 async def stats_command(message: Message):
     if message.from_user.id != ADMIN_ID:
         return
