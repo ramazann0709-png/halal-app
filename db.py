@@ -272,13 +272,12 @@ async def pay_debt(user_id: int, debt_id: int, creditor_name: str, amount: float
             "UPDATE debts SET paid_amount = paid_amount + ? WHERE id = ? AND user_id = ?",
             (amount, debt_id, user_id)
         )
-        await db.commit()
-        async def get_users_count():
-            async with aiosqlite.connect("finances.db") as db:
-                try:
-                    async with db.execute("SELECT COUNT(DISTINCT user_id) FROM transactions") as cursor:
-                        row = await cursor.fetchone()
-                        return row[0] if row else 0
-                except Exception:
-                    return 0
-
+        await db.commit()   
+async def get_users_count():
+    async with aiosqlite.connect(DB_NAME) as db:
+        try:
+            async with db.execute("SELECT COUNT(DISTINCT user_id) FROM transactions") as cursor:
+                row = await cursor.fetchone()
+                return row[0] if row else 0
+        except Exception:
+            return 0
