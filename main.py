@@ -1,14 +1,28 @@
 import asyncio
 from aiohttp import web
-from aiogram import Bot, Dispatcher, types
+from aiogram import Bot, Dispatcher, types, F
+from aiogram.types import Message, KeyboardButton, ReplyKeyboardMarkup, WebAppInfo
 from aiogram.filters import CommandStart
-from aiogram.types import KeyboardButton, ReplyKeyboardMarkup, WebAppInfo
 from db import (
-    init_db, update_nisaab_from_cbr, get_balance, get_goals, get_nisaab, 
-    add_transaction, create_goal, add_money_to_goal, 
-    get_goal_progress, finish_goal, get_expenses_by_category, 
-    get_transactions_history, create_debt, get_debts, pay_debt,
-    delete_transaction, reset_all_data
+    init_db,
+    get_users_count,
+    update_nisaab_from_cbr,
+    get_balance,
+    add_transaction,
+    create_goal,
+    add_money_to_goal,
+    get_goal_progress,
+    finish_goal,
+    get_expenses,
+    get_transactions_history,
+    create_debt,
+    delete_transaction,
+    reset_all_data,
+    get_goals,
+    get_debts,
+    get_nisaab,
+    get_expenses_by_category,
+    pay_debt
 )
 
 BOT_TOKEN = "8969041135:AAFrflT01mB8INpgr4w6b4-zbLEafiYyFRQ"
@@ -16,6 +30,15 @@ WEB_APP_URL = "https://finansmsbot.host"
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
+
+ADMIN_ID = 8774039431
+
+@dp.message(F.text == "/stats")
+async def stats_command(message: Message):
+    if message.from_user.id != ADMIN_ID:
+        return
+    total = await get_users_count()
+    await message.answer(f"📊 Статистика бота:\n\n👥 Всего пользователей: {total}")
 
 def json_response(data):
     return web.json_response(data, headers={
@@ -108,7 +131,7 @@ async def cmd_start(message: types.Message):
 
 async def main():
     await init_db()
-    await update_nisaab_from_cbr()
+    asyncio.create_task(update_nisaab_from_cbr())
     
     app = web.Application()
     app.router.add_route("OPTIONS", "/{tail:.*}", handle_options)
