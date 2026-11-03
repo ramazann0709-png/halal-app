@@ -272,7 +272,8 @@ async def pay_debt(user_id: int, debt_id: int, creditor_name: str, amount: float
             "UPDATE debts SET paid_amount = paid_amount + ? WHERE id = ? AND user_id = ?",
             (amount, debt_id, user_id)
         )
-        await db.commit()   
+        await db.commit()
+
 async def get_users_count():
     async with aiosqlite.connect(DB_NAME) as db:
         try:
