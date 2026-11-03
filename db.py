@@ -281,3 +281,4 @@ async def pay_debt(user_id: int, debt_id: int, creditor_name: str, amount: float
                 return row[0] if row else 0
         except Exception:
             return 0
+
