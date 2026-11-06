@@ -131,6 +131,7 @@
       backdrop-filter: blur(25px);
       -webkit-backdrop-filter: blur(25px);
       box-shadow: 0 16px 32px rgba(0, 0, 0, 0.25);
+      position: relative;
     }
 
     .balance-label {
@@ -176,6 +177,35 @@
       background: rgba(244, 63, 94, 0.15);
       color: #fb7185;
       border: 1px solid rgba(244, 63, 94, 0.25);
+    }
+
+    /* Карточка ИИ-советника */
+    .advisor-bubble {
+      background: linear-gradient(135deg, rgba(217, 119, 6, 0.1), rgba(16, 185, 129, 0.05));
+      border: 1px solid rgba(217, 119, 6, 0.3);
+      border-radius: 18px;
+      padding: 14px 16px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    .advisor-avatar {
+      font-size: 24px;
+      line-height: 1;
+    }
+    .advisor-content h4 {
+      font-size: 13px;
+      font-weight: 700;
+      color: #fbbf24;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .advisor-content p {
+      font-size: 12px;
+      color: #d1d5db;
+      line-height: 1.45;
     }
 
     .zakat-card {
@@ -258,6 +288,58 @@
       padding: 24px 10px;
       color: var(--text-muted);
       font-size: 13px;
+    }
+
+    /* Стили Paywall (Замочек на закрытых функциях) */
+    .pro-locked-container {
+      position: relative;
+      overflow: hidden;
+    }
+    .locked-blur {
+      filter: blur(5px);
+      pointer-events: none;
+      user-select: none;
+      opacity: 0.45;
+    }
+    .lock-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(10, 13, 20, 0.65);
+      backdrop-filter: blur(4px);
+      border-radius: 24px;
+      padding: 20px;
+      text-align: center;
+      z-index: 10;
+    }
+    .lock-icon {
+      font-size: 28px;
+      margin-bottom: 6px;
+    }
+    .lock-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #fbbf24;
+      margin-bottom: 4px;
+    }
+    .lock-desc {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      max-width: 250px;
+    }
+    .btn-unlock {
+      background: linear-gradient(135deg, #d97706, #f59e0b);
+      color: #000;
+      font-weight: 700;
+      font-size: 12px;
+      padding: 8px 18px;
+      border-radius: 12px;
+      border: none;
+      cursor: pointer;
     }
 
     .goal-card {
@@ -562,7 +644,16 @@
         <button class="currency-pill" onclick="switchCurrency('AED', this)">AED</button>
         <button class="currency-pill" onclick="switchCurrency('CNY', this)">¥ CNY</button>
       </div>
-      <div class="fx-rate-subline" id="fxRateSubline">1 USD = 92.50 ₽</div>
+      <div class="fx-rate-subline" id="fxRateSubline">Базовая валюта: Рубль РФ (₽)</div>
+
+      <!-- ИИ Советник Hisab Advisor -->
+      <div class="advisor-bubble" id="advisorBubbleBox">
+        <div class="advisor-avatar">💡</div>
+        <div class="advisor-content">
+          <h4 id="advisorTitle">Советник Hisab</h4>
+          <p id="advisorText">Запишите ваши первые операции, чтобы активировать персональный расчет нормы сбережений.</p>
+        </div>
+      </div>
 
       <div class="glass-card">
         <div class="balance-label">Свободный остаток</div>
@@ -577,9 +668,9 @@
       <div class="zakat-card">
         <div>
           <div class="zakat-title">
-            <span>✨</span> Закат к выплате
+            <span>✨</span> Закат к выплате (2.5%)
           </div>
-          <div class="zakat-sub" id="zakatStatusSub">Баланс ниже нисаба</div>
+          <div class="zakat-sub" id="zakatStatusSub">Баланс ниже нисаба (~450 000 ₽)</div>
         </div>
         <div>
           <div class="zakat-sum" id="zakatDisplay">₽ 0.00</div>
@@ -589,15 +680,14 @@
       <div class="section-header">
         <div class="section-title">Недавние движения</div>
       </div>
-      <div class="glass-card" style="padding: 10px 18px;" id="txListContainer">
-        <!-- Список транзакций -->
-      </div>
+      <div class="glass-card" style="padding: 10px 18px;" id="txListContainer"></div>
     </div>
 
-    <!-- Вкладка 2: Аналитика -->
+    <!-- Вкладка 2: Аналитика (С инструментами продаж Pro) -->
     <div class="view-container" id="view-analytics">
+      <!-- Базовый финансовый поток -->
       <div class="glass-card">
-        <div class="balance-label">Финансовый поток (Месяц)</div>
+        <div class="balance-label">Финансовый поток (Всего)</div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px;">
           <div>
             <span style="font-size: 11px; color: var(--text-muted);">Доходы</span>
@@ -610,6 +700,49 @@
         </div>
       </div>
 
+      <!-- ПРОДВИНУТАЯ АНАЛИТИКА 1: Прогноз капитала и Runway (Триггер продаж) -->
+      <div class="glass-card pro-locked-container" id="runwayCard">
+        <div class="lock-overlay" id="runwayLockOverlay">
+          <div class="lock-icon">🔒</div>
+          <div class="lock-title">Анализ Runway & Капитала</div>
+          <div class="lock-desc">Узнайте запас финансовой прочности и прогноз капитала на 6 месяцев</div>
+          <button class="btn-unlock" onclick="switchTab('plans')">Разблокировать в Lite</button>
+        </div>
+
+        <div class="locked-blur" id="runwayContent">
+          <div class="balance-label">Запас прочности (Runway)</div>
+          <div style="font-size: 22px; font-weight: 800; margin: 8px 0; color: #38bdf8;" id="runwayMonthsVal">3.4 мес.</div>
+          <p style="font-size: 11px; color: var(--text-muted); line-height: 1.4;">
+            При текущем темпе расходов вы сможете комфортно прожить без поступлений указанное время.
+          </p>
+          <div style="margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--glass-border);">
+            <div style="display: flex; justify-content: space-between; font-size: 12px;">
+              <span style="color: var(--text-muted);">Прогноз капитала через 6 мес:</span>
+              <span style="font-weight: 700; color: #34d399;" id="projectionVal">₽ 0.00</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ПРОДВИНУТАЯ АНАЛИТИКА 2: Детектор импульсивных трат -->
+      <div class="glass-card pro-locked-container" id="leaksCard">
+        <div class="lock-overlay" id="leaksLockOverlay">
+          <div class="lock-icon">⚡</div>
+          <div class="lock-title">Детектор финансовых утечек</div>
+          <div class="lock-desc">ИИ находит мелкие повторяющиеся траты и перерасход по категориям</div>
+          <button class="btn-unlock" onclick="switchTab('plans')">Попробовать бесплатно</button>
+        </div>
+
+        <div class="locked-blur" id="leaksContent">
+          <div class="balance-label">Потенциал сбережений</div>
+          <div style="font-size: 20px; font-weight: 800; margin: 8px 0; color: #fb7185;" id="leaksVal">₽ 0.00 / мес</div>
+          <p style="font-size: 11px; color: var(--text-muted); line-height: 1.4;" id="leaksAdvice">
+            Анализ категорий «Кафе», «Семья» и «Другое» на предмет оптимизации без потери качества жизни.
+          </p>
+        </div>
+      </div>
+
+      <!-- Индекс финансовой дисциплины -->
       <div class="glass-card">
         <div class="balance-label" style="margin-bottom: 12px;">Индекс финансовой грамотности</div>
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
@@ -627,7 +760,6 @@
 
     <!-- Вкладка 3: Цели и долги -->
     <div class="view-container" id="view-goals">
-      <!-- Блок фонда советника -->
       <div class="advisor-fund-box" id="advisorFundBox">
         <div class="advisor-fund-header">
           <div class="advisor-fund-title"><span>🛡</span> Накопительный фонд советника</div>
@@ -635,7 +767,7 @@
         </div>
         <div class="advisor-fund-val" id="advisorFundDisplay">₽ 0.00</div>
         <div class="advisor-fund-sub">
-          Сюда поступают безопасные отчисления по тарифу Lite. Распределяйте их в цели или на погашение долга в 1 клик.
+          Сюда поступают безопасные отчисления по тарифу Lite (10% от доходов). При наличии долгов советник в первую очередь направляет средства на их скорейшее погашение.
         </div>
       </div>
 
@@ -643,45 +775,65 @@
         <div class="section-title">Финансовые цели</div>
         <button class="section-action" onclick="openGoalModal()">+ Новая цель</button>
       </div>
-      <div class="glass-card" style="padding: 10px 18px;" id="goalsListContainer">
-        <!-- Список целей -->
-      </div>
+      <div class="glass-card" style="padding: 10px 18px;" id="goalsListContainer"></div>
 
       <div class="section-header" style="margin-top: 8px;">
         <div class="section-title">Долги (Кард аль-Хасан)</div>
         <button class="section-action" onclick="openDebtModal()">+ Добавить</button>
       </div>
-      <div class="glass-card" style="padding: 10px 18px;" id="debtsListContainer">
-        <!-- Список долгов -->
-      </div>
+      <div class="glass-card" style="padding: 10px 18px;" id="debtsListContainer"></div>
     </div>
 
-    <!-- Вкладка 4: Тарифы -->
+    <!-- Вкладка 4: Тарифы (С высокой конверсией) -->
     <div class="view-container" id="view-plans">
-      <div class="glass-card" style="border-color: rgba(217, 119, 6, 0.3); background: linear-gradient(145deg, rgba(217, 119, 6, 0.08), rgba(255,255,255,0.02));">
+      <div class="glass-card" style="border-color: rgba(217, 119, 6, 0.4); background: linear-gradient(145deg, rgba(217, 119, 6, 0.12), rgba(255,255,255,0.02));">
         <div style="display: flex; justify-content: space-between; align-items: center;">
-          <h3 style="font-size: 17px; font-weight: 700; color: #fbbf24;">✨ Hisab Lite</h3>
-          <span style="font-size: 13px; font-weight: 700; color: #fef08a;">179 ₽ / мес</span>
+          <h3 style="font-size: 18px; font-weight: 700; color: #fbbf24;">✨ Hisab Lite</h3>
+          <span style="font-size: 14px; font-weight: 700; color: #fef08a;">179 ₽ / мес</span>
         </div>
-        <p style="font-size: 12px; color: var(--text-muted); margin: 8px 0 14px; line-height: 1.4;">
-          Персональный ИИ-советник: рассчитывает безопасную норму сбережений по шариату и правилу Баффета, защищает от долговой ямы и автоматически перенаправляет средства при срочных долгах.
+        
+        <p style="font-size: 12px; color: #d1d5db; margin: 10px 0 16px; line-height: 1.45;">
+          Ваш персональный шариатский финансист: защищает от импульсивных трат, ведет расчет капитала и автоматически погашает долги.
         </p>
 
-        <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 14px; margin-bottom: 14px;">
-          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 6px;">💡 Калькулятор окупаемости сбережений:</div>
+        <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; font-size: 12px;">
+          <div style="display: flex; gap: 8px; align-items: center; color: #e5e7eb;">
+            <span style="color:#10b981;">✓</span> Автоматический накопительный фонд (10%)
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center; color: #e5e7eb;">
+            <span style="color:#10b981;">✓</span> Прогноз капитала и расчет запаса прочности (Runway)
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center; color: #e5e7eb;">
+            <span style="color:#10b981;">✓</span> Персональные советы по правилу Баффета и сунне
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center; color: #e5e7eb;">
+            <span style="color:#10b981;">✓</span> Детектор финансовых утечек
+          </div>
+        </div>
+
+        <!-- Калькулятор окупаемости -->
+        <div style="background: rgba(0,0,0,0.35); padding: 14px; border-radius: 16px; margin-bottom: 16px; border: 1px solid rgba(255,255,255,0.05);">
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 6px;">💡 Калькулятор окупаемости тарифа:</div>
           <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 600;">
             <span>Ваш доход в месяц:</span>
             <span id="roiIncomeVal" style="color:#34d399;">120 000 ₽</span>
           </div>
-          <input type="range" min="30000" max="300000" step="5000" value="120000" id="roiIncomeRange" style="width: 100%; margin: 8px 0;" oninput="updateRoiCalc(this.value)">
-          <div style="font-size: 12px; color: #fbbf24;">
-            Сбережение от импульсивных трат: <b id="roiSavedVal">~21 600 ₽/мес</b>
+          <input type="range" min="30000" max="300000" step="5000" value="120000" id="roiIncomeRange" style="width: 100%; margin: 10px 0;" oninput="updateRoiCalc(this.value)">
+          <div style="font-size: 12px; color: #fbbf24; font-weight: 600;">
+            Экономия от перерасхода: <span id="roiSavedVal">~21 600 ₽/мес</span>
+          </div>
+          <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">
+            Подписка окупается в 120 раз за счет предотвращения ненужных покупок.
           </div>
         </div>
 
         <button class="btn-submit" style="width: 100%; margin-top: 0;" id="btnActivateLite" onclick="toggleLitePlan()">
           Подключить Lite (3 дня бесплатно)
         </button>
+
+        <div style="text-align: center; margin-top: 10px; font-size: 11px; color: var(--text-muted);" id="trialSubtext">
+          Первые 3 дня — 0 ₽. Отмена в любой момент в 1 клик.
+        </div>
       </div>
     </div>
   </div>
@@ -706,7 +858,7 @@
     </button>
   </div>
 
-  <!-- Модалка операции Доход / Расход -->
+  <!-- Модалки (Операция, Цель, Долг) -->
   <div class="modal-overlay" id="txModal">
     <div class="modal-sheet">
       <h3 id="txModalTitle">Новая операция</h3>
@@ -716,20 +868,17 @@
       </div>
       <div class="form-group">
         <label>Описание</label>
-        <input type="text" class="input-field" id="txDescInput" placeholder="Например: Супермаркет или Проект">
+        <input type="text" class="input-field" id="txDescInput" placeholder="Например: Продукты или Зарплата">
       </div>
       <div class="form-group">
         <label>Категория</label>
-        <div class="category-pills" id="txCategoryPills">
-          <!-- Категории генерируются через JS -->
-        </div>
+        <div class="category-pills" id="txCategoryPills"></div>
       </div>
       <button class="btn-submit" onclick="submitTransaction()">Записать</button>
       <button class="btn-cancel" onclick="closeModal('txModal')">Отмена</button>
     </div>
   </div>
 
-  <!-- Модалка создания цели -->
   <div class="modal-overlay" id="goalModal">
     <div class="modal-sheet">
       <h3>Новая цель</h3>
@@ -746,7 +895,6 @@
     </div>
   </div>
 
-  <!-- Модалка создания долга -->
   <div class="modal-overlay" id="debtModal">
     <div class="modal-sheet">
       <h3>Зафиксировать долг</h3>
@@ -758,7 +906,7 @@
         </div>
       </div>
       <div class="form-group">
-        <label>Контрагент (Имя / Организация)</label>
+        <label>Контрагент (Имя)</label>
         <input type="text" class="input-field" id="debtCounterpartyInput" placeholder="Имя человека">
       </div>
       <div class="form-group">
@@ -772,22 +920,22 @@
 
   <script>
     // -------------------------------------------------------------
-    // КОНФИГУРАЦИЯ SUPABASE
+    // SUPABASE КОНФИГУРАЦИЯ
     // -------------------------------------------------------------
     const SUPABASE_URL = 'https://hyzrfkvxbkjcfcbwhiwd.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_Ax-wJ4xpn72d7YESzDIAWQ_07xPF4tA';
     const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
-    // ЧИСТЫЕ ДАННЫЕ ДЛЯ НОВЫХ ПОЛЬЗОВАТЕЛЕЙ
+    // СОСТОЯНИЕ ПРИЛОЖЕНИЯ
     let baseBalanceRub = 0;
     let advisorFundRub = 0;
     let currentPlan = 'free';
+    let trialUntil = null;
     let currentCurrency = 'RUB';
     let goals = [];
     let debts = [];
     let transactions = [];
 
-    // Курсы валют
     const RATES = {
       RUB: { rate: 1, symbol: '₽' },
       USD: { rate: 92.5, symbol: '$' },
@@ -799,7 +947,6 @@
     let selectedCategory = '';
     let activeDebtType = 'borrow';
 
-    // Получение Telegram ID пользователя
     function getUserId() {
       const tg = window.Telegram?.WebApp;
       if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
@@ -813,7 +960,6 @@
       return guestId;
     }
 
-    // Загрузка данных из облака Supabase
     async function loadSavedData() {
       const userId = getUserId();
       if (supabaseClient) {
@@ -827,13 +973,20 @@
           if (data && !error) {
             baseBalanceRub = Number(data.balance || 0);
             currentPlan = data.plan || 'free';
+            trialUntil = data.trial_until || null;
             advisorFundRub = Number(data.advisor_fund || 0);
             goals = Array.isArray(data.goals) ? data.goals : [];
             debts = Array.isArray(data.debts) ? data.debts : [];
             transactions = Array.isArray(data.transactions) ? data.transactions : [];
+
+            // Проверка истечения триала
+            if (trialUntil && new Date(trialUntil) < new Date()) {
+              currentPlan = 'free';
+              trialUntil = null;
+              saveAppData();
+            }
             return;
           } else {
-            // Новый пользователь -> чистая запись в базе
             await supabaseClient.from('user_finances').insert({
               telegram_id: userId,
               balance: 0,
@@ -846,17 +999,18 @@
             });
           }
         } catch (err) {
-          console.warn("Сетевой сбой при загрузке из Supabase:", err);
+          console.warn("Ошибка сети Supabase:", err);
         }
       }
 
-      // Резервная загрузка из localStorage
+      // Фоллбэк на localStorage
       const local = localStorage.getItem('hisab_app_state_' + userId);
       if (local) {
         try {
           const parsed = JSON.parse(local);
           baseBalanceRub = parsed.balance || 0;
           currentPlan = parsed.plan || 'free';
+          trialUntil = parsed.trialUntil || null;
           advisorFundRub = parsed.advisorFund || 0;
           goals = parsed.goals || [];
           debts = parsed.debts || [];
@@ -865,13 +1019,13 @@
       }
     }
 
-    // Сохранение в Supabase и локальный кэш
     async function saveAppData() {
       const userId = getUserId();
       const payload = {
         telegram_id: userId,
         balance: baseBalanceRub,
         plan: currentPlan,
+        trial_until: trialUntil,
         advisor_fund: advisorFundRub,
         goals: goals,
         debts: debts,
@@ -882,6 +1036,7 @@
       localStorage.setItem('hisab_app_state_' + userId, JSON.stringify({
         balance: baseBalanceRub,
         plan: currentPlan,
+        trialUntil,
         advisorFund: advisorFundRub,
         goals, debts, transactions
       }));
@@ -897,48 +1052,138 @@
       }
     }
 
-    // Уведомление на экране
     function showNotice(text) {
       const popup = document.getElementById('noticePopup');
       popup.innerText = text;
       popup.classList.add('show');
-      setTimeout(() => popup.classList.remove('show'), 2400);
+      setTimeout(() => popup.classList.remove('show'), 2500);
     }
 
-    // Отрисовка всех разделов
+    // -------------------------------------------------------------
+    // ЛОГИКА СОВЕТНИКА И АНАЛИТИКИ
+    // -------------------------------------------------------------
+    function updateAdvisorInsights() {
+      const titleEl = document.getElementById('advisorTitle');
+      const textEl = document.getElementById('advisorText');
+
+      const borrowedDebt = debts.find(d => d.type === 'borrow');
+      let totalExpense = 0;
+      let totalIncome = 0;
+      transactions.forEach(t => {
+        if (t.amount > 0) totalIncome += t.amount;
+        else totalExpense += Math.abs(t.amount);
+      });
+
+      if (currentPlan !== 'lite') {
+        titleEl.innerText = 'Советник Hisab (Базовый)';
+        textEl.innerText = 'Подключите тариф Lite, чтобы активировать персональный расчет нормы Баффета (50/30/20) и защиту от импульсивных трат.';
+        return;
+      }
+
+      // Советы для активного Lite
+      if (borrowedDebt) {
+        titleEl.innerText = '⚠️ Приоритет: Погашение долга';
+        textEl.innerText = `У вас зафиксирован долг перед ${borrowedDebt.name} на ${borrowedDebt.amount.toLocaleString('ru-RU')} ₽. В исламе своевременный возврат долга — первостепенный долг. 10% от новых доходов резервируются в фонд советника для его скорейшего закрытия.`;
+      } else if (baseBalanceRub >= 450000) {
+        titleEl.innerText = '✨ Закят и благодать (Баракат)';
+        textEl.innerText = `Ваш свободный капитал превышает нисаб (~450 000 ₽). При сохранении этой суммы в течение года (хауль) закят составит 2.5%. Очищение имущества умножает благословение ваших финансов.`;
+      } else if (goals.length > 0) {
+        const topGoal = goals[0];
+        const rem = topGoal.target - topGoal.current;
+        titleEl.innerText = `🎯 Фокус на цели: ${topGoal.title}`;
+        textEl.innerText = `До достижения цели осталось ${rem.toLocaleString('ru-RU')} ₽. По правилу Уоррена Баффета: «Не экономьте то, что осталось после трат. Тратьте то, что осталось после сбережений». Фонд советника пополняет эту цель автоматически.`;
+      } else {
+        titleEl.innerText = '💡 Правило финансовой подушки';
+        textEl.innerText = 'Рекомендуется сформировать резерв безопасности минимум на 3–6 месяцев обязательных расходов. Создайте цель «Резерв», чтобы фонд советника направлял сбережения туда.';
+      }
+    }
+
+    function renderProAnalytics() {
+      const isPro = currentPlan === 'lite';
+      const cur = RATES[currentCurrency];
+
+      // Блокировка/разблокировка экранов
+      document.getElementById('runwayLockOverlay').style.display = isPro ? 'none' : 'flex';
+      document.getElementById('runwayContent').className = isPro ? '' : 'locked-blur';
+      document.getElementById('leaksLockOverlay').style.display = isPro ? 'none' : 'flex';
+      document.getElementById('leaksContent').className = isPro ? '' : 'locked-blur';
+
+      let inc = 0, exp = 0;
+      let leakSum = 0;
+      transactions.forEach(t => {
+        if (t.amount > 0) inc += t.amount;
+        else {
+          const val = Math.abs(t.amount);
+          exp += val;
+          if (['Кафе', 'Другое'].includes(t.category)) {
+            leakSum += val * 0.3; // 30% импульсивного чека
+          }
+        }
+      });
+
+      // Runway расчет
+      const monthlyBurn = exp > 0 ? exp : 30000;
+      const runwayMonths = (baseBalanceRub / monthlyBurn).toFixed(1);
+      document.getElementById('runwayMonthsVal').innerText = `${runwayMonths} мес.`;
+
+      // Прогноз капитала через 6 мес с учетом отчислений 10%
+      const projected = baseBalanceRub + ((inc * 0.15) * 6);
+      document.getElementById('projectionVal').innerText = `${cur.symbol} ${(projected / cur.rate).toLocaleString('ru-RU', { maximumFractionDigits: 0 })}`;
+
+      // Утечки
+      document.getElementById('leaksVal').innerText = `${cur.symbol} ${(leakSum / cur.rate).toLocaleString('ru-RU', { maximumFractionDigits: 0 })} / мес`;
+    }
+
+    // -------------------------------------------------------------
+    // ОТРИСОВКА ИНТЕРФЕЙСА
+    // -------------------------------------------------------------
     function renderAll() {
       const cur = RATES[currentCurrency];
-      
+
       // Баланс
       const convertedBalance = (baseBalanceRub / cur.rate).toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       document.getElementById('balanceDisplay').innerText = `${cur.symbol} ${convertedBalance}`;
 
-      // Закат (Нисаб ~ 450 000 руб.)
+      // Закят
       const zakatRub = baseBalanceRub >= 450000 ? (baseBalanceRub * 0.025) : 0;
       const convertedZakat = (zakatRub / cur.rate).toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       document.getElementById('zakatDisplay').innerText = `${cur.symbol} ${convertedZakat}`;
-      document.getElementById('zakatStatusSub').innerText = baseBalanceRub >= 450000 ? 'Баланс превысил нисаб' : 'Баланс ниже нисаба';
+      document.getElementById('zakatStatusSub').innerText = baseBalanceRub >= 450000 ? 'Баланс превысил нисаб' : 'Баланс ниже нисаба (~450 000 ₽)';
 
       // Фонд советника
       const convFund = (advisorFundRub / cur.rate).toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       document.getElementById('advisorFundDisplay').innerText = `${cur.symbol} ${convFund}`;
 
-      // Бейдж тарифа
+      // Тарифные бейджи и кнопки
       const badge = document.getElementById('planBadge');
+      const btnLite = document.getElementById('btnActivateLite');
+      const trialSubtext = document.getElementById('trialSubtext');
+
       if (currentPlan === 'lite') {
         badge.innerText = '✨ Lite активен';
         badge.className = 'badge badge-plan pro';
-        document.getElementById('btnActivateLite').innerText = '✓ Тариф Lite активен';
+        
+        if (trialUntil) {
+          const daysLeft = Math.ceil((new Date(trialUntil) - new Date()) / (1000 * 60 * 60 * 24));
+          btnLite.innerText = `✓ Пробный период (${daysLeft > 0 ? daysLeft : 1} дн. осталось)`;
+          trialSubtext.innerText = 'Пробный доступ активен. Полноценный доступ ко всем модулям.';
+        } else {
+          btnLite.innerText = '✓ Тариф Lite активен';
+          trialSubtext.innerText = 'Подписка активна.';
+        }
       } else {
         badge.innerText = '● Базовый';
         badge.className = 'badge badge-plan';
-        document.getElementById('btnActivateLite').innerText = 'Подключить Lite (3 дня бесплатно)';
+        btnLite.innerText = 'Подключить Lite (3 дня бесплатно)';
+        trialSubtext.innerText = 'Первые 3 дня — 0 ₽. Отмена в любой момент в 1 клик.';
       }
 
       renderTransactions();
       renderGoals();
       renderDebts();
       renderAnalytics();
+      renderProAnalytics();
+      updateAdvisorInsights();
     }
 
     function renderTransactions() {
@@ -1036,7 +1281,6 @@
       document.getElementById('analyticsIncome').innerText = `${cur.symbol} ${(inc / cur.rate).toLocaleString('ru-RU', { maximumFractionDigits: 0 })}`;
       document.getElementById('analyticsExpense').innerText = `${cur.symbol} ${(exp / cur.rate).toLocaleString('ru-RU', { maximumFractionDigits: 0 })}`;
 
-      // Прогресс финансовой грамотности
       let score = 40;
       if (transactions.length >= 3) score += 20;
       if (goals.length >= 1) score += 20;
@@ -1048,7 +1292,9 @@
       document.getElementById('literacyBonusBadge').innerText = score >= 80 ? '🔥 Высокая дисциплина' : '+0% рост';
     }
 
-    // Переключение вкладок
+    // -------------------------------------------------------------
+    // ДЕЙСТВИЯ ПОЛЬЗОВАТЕЛЯ
+    // -------------------------------------------------------------
     function switchTab(tabId) {
       document.querySelectorAll('.view-container').forEach(el => el.classList.remove('active'));
       document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
@@ -1063,7 +1309,6 @@
       }
     }
 
-    // Переключение валюты
     function switchCurrency(code, btn) {
       document.querySelectorAll('.currency-pill').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
@@ -1076,7 +1321,6 @@
       renderAll();
     }
 
-    // Модальные окна
     function openTxModal(type) {
       activeTxType = type;
       document.getElementById('txModalTitle').innerText = type === 'income' ? '+ Новый доход' : '− Новый расход';
@@ -1113,15 +1357,15 @@
 
       const finalAmount = activeTxType === 'income' ? amt : -amt;
 
-      // ЛОГИКА LITE: Безопасное отчисление 10% в фонд советника при доходе
+      // ЛОГИКА ТАРИФА LITE: Сбережение 10% в фонд советника
       if (activeTxType === 'income' && currentPlan === 'lite') {
         const savedPart = Math.round(amt * 0.10);
         baseBalanceRub += (amt - savedPart);
         advisorFundRub += savedPart;
-        showNotice(`+${amt} ₽ записано. ${savedPart} ₽ защищено советником в фонд.`);
+        showNotice(`+${amt.toLocaleString('ru-RU')} ₽ учтено. ${savedPart.toLocaleString('ru-RU')} ₽ защищено в фонд советника.`);
       } else {
         baseBalanceRub += finalAmount;
-        showNotice(`${activeTxType === 'income' ? 'Доход' : 'Расход'} учтен.`);
+        showNotice(`${activeTxType === 'income' ? 'Доход' : 'Расход'} записан.`);
       }
 
       transactions.unshift({
@@ -1155,7 +1399,7 @@
       closeModal('goalModal');
       saveAppData();
       renderAll();
-      showNotice("Цель добавлена!");
+      showNotice("Цель создана!");
     }
 
     function topUpGoal(idx) {
@@ -1223,14 +1467,13 @@
       showNotice("Долг закрыт!");
     }
 
-    // Распределение фонда советника
+    // Распределение фонда советника с приоритетом долгов
     function distributeAdvisorFund() {
       if (advisorFundRub <= 0) {
-        showNotice("Накопительный фонд пуст.");
+        showNotice("Накопительный фонд пуст. Запишите доход для накопления.");
         return;
       }
 
-      // ПРИОРИТЕТ ГОРЯЩЕГО ДОЛГА: Если есть взятые долги, закрываем их в первую очередь
       const borrowedDebt = debts.find(d => d.type === 'borrow');
       if (borrowedDebt) {
         const payoff = Math.min(advisorFundRub, borrowedDebt.amount);
@@ -1241,11 +1484,10 @@
         }
         saveAppData();
         renderAll();
-        showNotice(`Советник направил ${payoff} ₽ на погашение долга перед ${borrowedDebt.name}!`);
+        showNotice(`Советник направил ${payoff.toLocaleString('ru-RU')} ₽ на погашение долга перед ${borrowedDebt.name}!`);
         return;
       }
 
-      // Если долгов нет -> переводим в первую активную цель
       if (goals.length > 0) {
         const topGoal = goals[0];
         topGoal.current += advisorFundRub;
@@ -1253,11 +1495,10 @@
         advisorFundRub = 0;
         saveAppData();
         renderAll();
-        showNotice(`${sent} ₽ переведено в цель: ${topGoal.title}!`);
+        showNotice(`${sent.toLocaleString('ru-RU')} ₽ переведено в цель: ${topGoal.title}!`);
         return;
       }
 
-      // Если нет ни долгов, ни целей -> возвращаем в свободный баланс
       baseBalanceRub += advisorFundRub;
       advisorFundRub = 0;
       saveAppData();
@@ -1266,10 +1507,19 @@
     }
 
     function toggleLitePlan() {
-      currentPlan = currentPlan === 'lite' ? 'free' : 'lite';
+      if (currentPlan === 'lite') {
+        currentPlan = 'free';
+        trialUntil = null;
+        showNotice("Переключено на базовый тариф");
+      } else {
+        currentPlan = 'lite';
+        const exp = new Date();
+        exp.setDate(exp.getDate() + 3);
+        trialUntil = exp.toISOString();
+        showNotice("✨ Пробный период Lite активирован на 3 дня!");
+      }
       saveAppData();
       renderAll();
-      showNotice(currentPlan === 'lite' ? "Тариф Lite успешно активирован!" : "Переключено на базовый тариф");
     }
 
     function updateRoiCalc(val) {
@@ -1282,7 +1532,6 @@
       document.getElementById(id).classList.remove('open');
     }
 
-    // Инициализация при запуске
     async function initApp() {
       if (window.Telegram?.WebApp) {
         window.Telegram.WebApp.ready();
@@ -1295,4 +1544,4 @@
     window.addEventListener('DOMContentLoaded', initApp);
   </script>
 </body>
-</html> 
+</html>
