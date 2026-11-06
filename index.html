@@ -822,7 +822,7 @@
     <div id="view-overview" class="view-content active">
       <div class="glass-card">
         <div class="balance-label">Свободный остаток</div>
-        <div class="balance-val" id="balanceDisplay">₽ 842,500.00</div>
+        <div class="balance-val" id="balanceDisplay">₽ 0.00</div>
         
         <div class="quick-actions">
           <button class="btn-action btn-income" onclick="openTxModal('income')">+ Доход</button>
@@ -836,35 +836,35 @@
           <div class="zakat-title">
             <span>✨</span> Закат к выплате (2.5%)
           </div>
-          <div class="zakat-sub">Баланс превысил нисаб</div>
+          <div class="zakat-sub" id="zakatStatusSub">Баланс ниже нисаба (~450 000 ₽)</div>
         </div>
         <div>
-          <div class="zakat-sum" id="zakatDisplay">₽ 21,062.50</div>
+          <div class="zakat-sum" id="zakatDisplay">₽ 0.00</div>
         </div>
       </div>
 
       <!-- Недавние транзакции -->
       <div class="section-header">
         <div class="section-title">Недавние движения</div>
-        <span class="chip-sum" id="txCountBadge" style="cursor:default;">3 операции</span>
+        <span class="chip-sum" id="txCountBadge" style="cursor:default;">0 операций</span>
       </div>
 
       <div class="glass-card" style="padding: 12px 18px;" id="txListContainer"></div>
     </div>
 
     <!-- ============================================================== -->
-    <!-- ВКЛАДКА 2: АНАЛИТИКА (ТОЛЬКО ЧИСТЫЙ БАЗОВЫЙ УЧЕТ)               -->
+    <!-- ВКЛАДКА 2: АНАЛИТИКА                                            -->
     <!-- ============================================================== -->
     <div id="view-analytics" class="view-content">
       <!-- Баннер Денежного Потока (Cash Flow) за месяц -->
       <div class="glass-card" style="display:grid; grid-template-columns:1fr 1fr; gap:12px; padding:16px;">
         <div>
-          <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Доходы (месяц)</div>
-          <div style="font-size:17px; font-weight:700; color:#34d399; margin-top:3px;" id="anMonthlyIncome">+ ₽ 185,000</div>
+          <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Доходы</div>
+          <div style="font-size:17px; font-weight:700; color:#34d399; margin-top:3px;" id="anMonthlyIncome">₽ 0</div>
         </div>
         <div style="border-left:1px solid rgba(255,255,255,0.08); padding-left:12px;">
-          <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Расходы (месяц)</div>
-          <div style="font-size:17px; font-weight:700; color:#fb7185; margin-top:3px;" id="anMonthlyExpense">− ₽ 58,450</div>
+          <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Расходы</div>
+          <div style="font-size:17px; font-weight:700; color:#fb7185; margin-top:3px;" id="anMonthlyExpense">₽ 0</div>
         </div>
       </div>
 
@@ -872,85 +872,15 @@
       <div class="glass-card" style="padding: 16px 18px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
           <span style="font-size:13px; font-weight:600;">Баланс потока</span>
-          <span style="color:#34d399; font-weight:600;" id="anSavingsRate">Сбережения: 68%</span>
+          <span style="color:#34d399; font-weight:600;" id="anSavingsRate">Сбережения: 0%</span>
         </div>
         <div style="display:flex; height:8px; border-radius:4px; overflow:hidden; background:rgba(255,255,255,0.05);">
-          <div style="background:#10b981; height:100%; width:76%;" id="anIncomeBar"></div>
-          <div style="background:#f43f5e; height:100%; width:24%;" id="anExpenseBar"></div>
+          <div style="background:#10b981; height:100%; width:0%;" id="anIncomeBar"></div>
+          <div style="background:#f43f5e; height:100%; width:0%;" id="anExpenseBar"></div>
         </div>
         <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-muted); margin-top:8px;">
-          <span>Доход: 76%</span>
-          <span>Расход: 24%</span>
-        </div>
-      </div>
-
-      <!-- Детализация по категориям -->
-      <div class="glass-card">
-        <div style="display:grid; grid-template-columns:1fr 1fr; background:rgba(255,255,255,0.03); border:1px solid var(--glass-border); padding:3px; border-radius:12px; margin-bottom:14px;">
-          <button class="currency-pill active" id="btn-an-expense" style="font-size:12px; padding:6px 0;" onclick="switchAnalyticsTab('expense')">Структура расходов</button>
-          <button class="currency-pill" id="btn-an-income" style="font-size:12px; padding:6px 0;" onclick="switchAnalyticsTab('income')">Источники доходов</button>
-        </div>
-
-        <!-- Расходы по категориям -->
-        <div id="an-expense-breakdown">
-          <div style="margin-bottom:12px;">
-            <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:5px;">
-              <span>🛒 Супермаркеты и продукты</span>
-              <div><span class="cat-sum" data-base-rub="19800">₽ 19,800</span> <span style="font-size:11px; color:var(--text-muted);">34%</span></div>
-            </div>
-            <div style="background:rgba(255,255,255,0.05); height:6px; border-radius:3px; overflow:hidden;"><div style="width:34%; background:#fb7185; height:100%;"></div></div>
-          </div>
-
-          <div style="margin-bottom:12px;">
-            <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:5px;">
-              <span>🏠 Дом, семья и счета</span>
-              <div><span class="cat-sum" data-base-rub="15200">₽ 15,200</span> <span style="font-size:11px; color:var(--text-muted);">26%</span></div>
-            </div>
-            <div style="background:rgba(255,255,255,0.05); height:6px; border-radius:3px; overflow:hidden;"><div style="width:26%; background:#f43f5e; height:100%;"></div></div>
-          </div>
-
-          <div style="margin-bottom:12px;">
-            <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:5px;">
-              <span>⛽ Заправка и транспорт</span>
-              <div><span class="cat-sum" data-base-rub="10500">₽ 10,500</span> <span style="font-size:11px; color:var(--text-muted);">18%</span></div>
-            </div>
-            <div style="background:rgba(255,255,255,0.05); height:6px; border-radius:3px; overflow:hidden;"><div style="width:18%; background:#fbbf24; height:100%;"></div></div>
-          </div>
-
-          <div>
-            <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:5px;">
-              <span>🎁 Садака и помощь</span>
-              <div><span class="cat-sum" data-base-rub="7500">₽ 7,500</span> <span style="font-size:11px; color:var(--text-muted);">13%</span></div>
-            </div>
-            <div style="background:rgba(255,255,255,0.05); height:6px; border-radius:3px; overflow:hidden;"><div style="width:13%; background:#34d399; height:100%;"></div></div>
-          </div>
-        </div>
-
-        <!-- Доходы по категориям -->
-        <div id="an-income-breakdown" style="display:none;">
-          <div style="margin-bottom:12px;">
-            <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:5px;">
-              <span>💼 Проекты и фриланс</span>
-              <div><span class="cat-sum" data-base-rub="105000">₽ 105,000</span> <span style="font-size:11px; color:var(--text-muted);">57%</span></div>
-            </div>
-            <div style="background:rgba(255,255,255,0.05); height:6px; border-radius:3px; overflow:hidden;"><div style="width:57%; background:#10b981; height:100%;"></div></div>
-          </div>
-
-          <div style="margin-bottom:12px;">
-            <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:5px;">
-              <span>🏢 Зарплата</span>
-              <div><span class="cat-sum" data-base-rub="60000">₽ 60,000</span> <span style="font-size:11px; color:var(--text-muted);">32%</span></div>
-            </div>
-            <div style="background:rgba(255,255,255,0.05); height:6px; border-radius:3px; overflow:hidden;"><div style="width:32%; background:#34d399; height:100%;"></div></div>
-          </div>
-
-          <div>
-            <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:5px;">
-              <span>📈 Торговля и бизнес</span>
-              <div><span class="cat-sum" data-base-rub="20000">₽ 20,000</span> <span style="font-size:11px; color:var(--text-muted);">11%</span></div>
-            </div>
-            <div style="background:rgba(255,255,255,0.05); height:6px; border-radius:3px; overflow:hidden;"><div style="width:11%; background:#fbbf24; height:100%;"></div></div>
-          </div>
+          <span id="anIncomePctText">Доход: 0%</span>
+          <span id="anExpensePctText">Расход: 0%</span>
         </div>
       </div>
 
@@ -964,24 +894,41 @@
           </div>
           <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:10px;">
             <div style="font-size:11px; color:var(--text-muted);">Нисаб</div>
-            <div style="font-size:14px; font-weight:700; color:#34d399; margin-top:2px;">Превышен ✓</div>
+            <div style="font-size:14px; font-weight:700; color:#fbbf24; margin-top:2px;" id="nisabStatusText">Ниже порога</div>
           </div>
         </div>
       </div>
     </div>
 
     <!-- ============================================================== -->
-    <!-- ВКЛАДКА 3: ЦЕЛИ И ДОЛГИ (ТОЛЬКО РУЧНОЙ ВВОД И СПИСКИ)           -->
+    <!-- ВКЛАДКА 3: ЦЕЛИ И ДОЛГИ                                         -->
     <!-- ============================================================== -->
     <div id="view-debts" class="view-content">
-      <!-- 1. ЦЕЛИ (НАВЕРХУ) -->
-      <div class="section-header">
+      
+      <!-- 1. СВОБОДНЫЙ ФОНД СОВЕТНИКА (ПЕРЕНЕСЕН СЮДА) -->
+      <div class="glass-card" id="advisorFundBox" style="border-color:rgba(56,189,248,0.35); background:linear-gradient(135deg, rgba(56,189,248,0.12), rgba(255,255,255,0.02)); padding:16px;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <div style="font-size:11px; font-weight:700; color:#38bdf8; text-transform:uppercase; letter-spacing:0.5px;">💰 Свободный фонд советника</div>
+            <div style="font-size:24px; font-weight:800; color:#fff; margin-top:2px;" id="hubAllocatedPoolDisplay">₽ 0.00</div>
+          </div>
+          <button class="btn-add-inline" style="background:#0284c7; border:none; padding:8px 14px; font-size:12px;" onclick="openDistributeFundModal()">
+            Перевести в цель →
+          </button>
+        </div>
+        <div style="font-size:12px; color:var(--text-muted); margin-top:8px; line-height:1.45;">
+          Сюда автоматически откладываются сбережения советника по тарифу Lite (10–18%). Направьте их в любую цель или оставьте в резерве.
+        </div>
+      </div>
+
+      <!-- 2. ЦЕЛИ -->
+      <div class="section-header" style="margin-top: 6px;">
         <div class="section-title">Финансовые цели и копилки</div>
         <button class="btn-add-inline" onclick="openNewGoalModal()">+ Новая цель</button>
       </div>
       <div id="goalsListContainer"></div>
 
-      <!-- 2. ДОЛГИ (НИЖЕ ЦЕЛЕЙ) -->
+      <!-- 3. ДОЛГИ -->
       <div class="section-header" style="margin-top: 10px;">
         <div class="section-title">Кард аль-Хасан (Долги)</div>
         <button class="btn-add-inline" onclick="openNewDebtModal()">+ Добавить долг</button>
@@ -991,11 +938,11 @@
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px; padding-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.06);">
           <div>
             <div style="font-size:11px; color:var(--text-muted);">Я взял в долг:</div>
-            <div style="font-size:16px; font-weight:700; color:#fb7185;" id="totalBorrowedDisplay">− ₽ 15,000</div>
+            <div style="font-size:16px; font-weight:700; color:#fb7185;" id="totalBorrowedDisplay">− ₽ 0.00</div>
           </div>
           <div style="border-left:1px solid rgba(255,255,255,0.08); padding-left:12px;">
             <div style="font-size:11px; color:var(--text-muted);">Мне должны:</div>
-            <div style="font-size:16px; font-weight:700; color:#34d399;" id="totalLentDisplay">+ ₽ 50,000</div>
+            <div style="font-size:16px; font-weight:700; color:#34d399;" id="totalLentDisplay">+ ₽ 0.00</div>
           </div>
         </div>
         <div id="debtsListContainer"></div>
@@ -1003,12 +950,27 @@
     </div>
 
     <!-- ============================================================== -->
-    <!-- ЕДИНЫЙ РАЗДЕЛ ПОДПИСКИ: ПРОДАЖА (ЕСЛИ FREE) ИЛИ HUB (ЕСЛИ LITE) -->
+    <!-- ЕДИНЫЙ РАЗДЕЛ ПОДПИСКИ: ПРОДАЖА (ЕСЛИ FREE) ИЛИ АНАЛИТИКА (LITE) -->
     <!-- ============================================================== -->
     <div id="view-lite-center" class="view-content">
       
-      <!-- БЛОК 1: ПРОДАЮЩАЯ СТРАНИЦА (ОТОБРАЖАЕТСЯ ТОЛЬКО ПРИ БАЗОВОМ ТАРИФЕ) -->
+      <!-- БЛОК 1: ПРОДАЖА ТАРИФА (ЕСЛИ FREE) -->
       <div id="lite-sales-block">
+        
+        <!-- Карточка тарифа (перемещена наверх) -->
+        <div class="glass-card" style="border-color:rgba(16,185,129,0.3); background:linear-gradient(145deg, rgba(16,185,129,0.1), rgba(255,255,255,0.02)); margin-bottom:24px;">
+          <div style="display:flex; justify-content:space-between; align-items:baseline;">
+            <h3 style="font-size:18px; font-weight:800;">Тариф Hisab Lite</h3>
+            <span style="font-size:24px; font-weight:900; color:#34d399;">179 ₽ <span style="font-size:12px; color:var(--text-muted); font-weight:500;">/ мес</span></span>
+          </div>
+          <p style="font-size:12.5px; color:var(--text-muted); margin:8px 0 14px; line-height:1.4;">
+            Включает график прогноза капитала, умный накопительный фонд, анализ подушки (Runway) и детектор утечек.
+          </p>
+          <button class="btn-submit income" style="font-size:15px; padding:14px;" onclick="activatePlan('lite')">
+            Подключить за 179 ₽ (3 дня бесплатно) →
+          </button>
+        </div>
+
         <div style="text-align:center; display:flex; flex-direction:column; align-items:center; gap:6px; margin-bottom: 16px;">
           <h2 style="font-size:22px; font-weight:800; letter-spacing:-0.5px; line-height:1.2;">Фундамент вашего капитала</h2>
           <p style="font-size:13px; color:var(--text-muted); line-height:1.4; max-width:320px; margin-top:4px;">
@@ -1018,8 +980,6 @@
 
         <!-- Советы и мудрость -->
         <div style="display:flex; flex-direction:column; gap:12px; margin-bottom:18px;">
-          
-          <!-- Религия -->
           <div style="background:rgba(16,185,129,0.05); border:1px solid rgba(16,185,129,0.2); border-radius:16px; padding:14px;">
             <div style="font-size:12px; color:#34d399; font-weight:700; margin-bottom:6px; display:flex; align-items:center; gap:6px;">
               <span>⚖️</span> Шариат и умеренность (Исраф)
@@ -1029,7 +989,6 @@
             </div>
           </div>
 
-          <!-- Книги -->
           <div style="background:rgba(56,189,248,0.05); border:1px solid rgba(56,189,248,0.2); border-radius:16px; padding:14px;">
             <div style="font-size:12px; color:#38bdf8; font-weight:700; margin-bottom:6px; display:flex; align-items:center; gap:6px;">
               <span>📖</span> Дж. Клейсон, «Самый богатый человек в Вавилоне»
@@ -1039,7 +998,6 @@
             </div>
           </div>
 
-          <!-- Успешные люди -->
           <div style="background:rgba(217,119,6,0.05); border:1px solid rgba(217,119,6,0.2); border-radius:16px; padding:14px;">
             <div style="font-size:12px; color:#fbbf24; font-weight:700; margin-bottom:6px; display:flex; align-items:center; gap:6px;">
               <span>💡</span> Уоррен Баффет (Инвестор)
@@ -1048,195 +1006,130 @@
               «Не откладывайте то, что осталось после трат. Тратьте то, что осталось после сбережений». Инструменты Hisab Lite прививают именно эту привычку.
             </div>
           </div>
-
-        </div>
-
-        <!-- Переключатель периодов и карточка тарифа -->
-        <div style="display:grid; grid-template-columns:1fr 1fr; background:rgba(255,255,255,0.04); border:1px solid var(--glass-border); padding:3px; border-radius:14px; margin-bottom:12px;">
-          <button class="currency-pill active" id="btn-period-month" onclick="setPlanPeriod('month')">Ежемесячно</button>
-          <button class="currency-pill" id="btn-period-year" onclick="setPlanPeriod('year')">На год (-20%)</button>
-        </div>
-
-        <div class="plan-card lite" style="margin-bottom:16px;">
-          <div>
-            <h3 style="font-size:18px; font-weight:800; letter-spacing:-0.3px;">Hisab Lite</h3>
-            <p style="font-size:12.5px; color:var(--text-muted); margin-top:3px; line-height:1.4;">
-              Персональный алгоритм, который бережёт от кассового разрыва и закрывает долги в 2.4 раза быстрее.
-            </p>
-          </div>
-          <div style="display:flex; align-items:baseline; gap:6px;">
-            <span style="font-size:32px; font-weight:900; color:#fff;" id="price-lite">179 ₽</span>
-            <span style="font-size:13px; color:var(--text-muted);" id="period-lite">/ месяц (-38%)</span>
-          </div>
-          <div style="display:flex; flex-direction:column; gap:8px; font-size:12.5px; color:#e5e7eb; border-top:1px solid rgba(255,255,255,0.06); padding-top:10px;">
-            <div style="display:flex; align-items:center; gap:8px;">
-              <span style="color:#34d399; font-size:15px;">✓</span><span><strong>Безопасный процент:</strong> расчёт отчислений</span>
-            </div>
-            <div style="display:flex; align-items:center; gap:8px;">
-              <span style="color:#34d399; font-size:15px;">✓</span><span><strong>Свободный фонд накоплений:</strong> ручной выбор цели</span>
-            </div>
-            <div style="display:flex; align-items:center; gap:8px;">
-              <span style="color:#34d399; font-size:15px;">✓</span><span><strong>Приоритет долгов:</strong> защита от просрочки</span>
-            </div>
-            <div style="display:flex; align-items:center; gap:8px;">
-              <span style="color:#34d399; font-size:15px;">✓</span><span><strong>Прогноз капитала и Runway:</strong> подушка безопасности</span>
-            </div>
-          </div>
-          <button class="btn-submit income" style="font-size:15px; padding:15px;" onclick="activatePlan('lite')">
-            Включить за 179 ₽ →
-          </button>
-        </div>
-
-        <div class="guarantee-pills-row">
-          <div class="guarantee-pill"><span style="font-size:16px;">🛡</span><span style="font-size:10.5px; font-weight:600; color:#fff;">Без скрытых списаний</span></div>
-          <div class="guarantee-pill"><span style="font-size:16px;">🤝</span><span style="font-size:10.5px; font-weight:600; color:#34d399;">100% Халяль</span></div>
-          <div class="guarantee-pill"><span style="font-size:16px;">⚡️</span><span style="font-size:10.5px; font-weight:600; color:#fbbf24;">Отмена в 1 клик</span></div>
         </div>
       </div>
 
-
-      <!-- БЛОК 2: ПАНЕЛЬ УПРАВЛЕНИЯ LITE HUB (ОТОБРАЖАЕТСЯ ТОЛЬКО ПРИ ТАРИФЕ LITE) -->
+      <!-- БЛОК 2: PRO-АНАЛИТИКА И ГРАФИК ПОДПИСКИ (ЕСЛИ LITE АКТИВЕН) -->
       <div id="lite-dashboard-block" style="display:none;">
         
-        <div class="lite-hub-hero">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-            <div style="display:flex; align-items:center; gap:8px;">
-              <span style="font-size:22px;">✨</span>
-              <div>
-                <h2 style="font-size:18px; font-weight:800; letter-spacing:-0.4px;">Панель Hisab Lite</h2>
-                <div style="font-size:11.5px; color:var(--text-muted);">Ваш персональный финансовый ИИ</div>
-              </div>
-            </div>
-            <span class="lite-status-pill active" onclick="activatePlan('free')" style="cursor:pointer;" title="Нажмите, чтобы отключить">● Активен</span>
+        <!-- Заголовок активного тарифа (без громоздкой панели) -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+          <div>
+            <h2 style="font-size:19px; font-weight:800;">Аналитика Hisab Lite</h2>
+            <div style="font-size:11.5px; color:var(--text-muted);">Умный расчет траектории капитала</div>
           </div>
-          
-          <div class="lite-metric-grid">
-            <div class="lite-metric-card">
-              <div class="lite-metric-title">Норма сбережений</div>
-              <div class="lite-metric-val" style="color:#34d399;" id="hubMetricRate">18%</div>
+          <span class="badge" style="cursor:pointer;" onclick="activatePlan('free')" title="Нажмите для отмены">✓ Lite активен</span>
+        </div>
+
+        <!-- ГРАФИК ПРОГНОЗА КАПИТАЛА НА 6 МЕСЯЦЕВ (SVG) -->
+        <div class="glass-card" style="padding:16px; margin-bottom:14px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <div>
+              <div style="font-size:11px; text-transform:uppercase; color:var(--text-muted); font-weight:700;">Траектория капитала (6 мес)</div>
+              <div style="font-size:20px; font-weight:800; color:#34d399; margin-top:2px;" id="chartCapitalProjected">₽ 0.00</div>
             </div>
-            <div class="lite-metric-card">
-              <div class="lite-metric-title">Runway (подушка)</div>
-              <div class="lite-metric-val" style="color:#fbbf24;" id="hubMetricRunway">8.4 мес</div>
-            </div>
+            <span style="font-size:11px; color:#38bdf8; background:rgba(56,189,248,0.15); border:1px solid rgba(56,189,248,0.3); padding:3px 8px; border-radius:8px;">+18% сбережений</span>
+          </div>
+
+          <!-- SVG Интерактивный график -->
+          <div style="width:100%; height:120px; margin: 10px 0;">
+            <svg viewBox="0 0 320 100" style="width:100%; height:100%; overflow:visible;">
+              <defs>
+                <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#10b981" stop-opacity="0.35"/>
+                  <stop offset="100%" stop-color="#10b981" stop-opacity="0.0"/>
+                </linearGradient>
+              </defs>
+              <!-- Сетка -->
+              <line x1="0" y1="80" x2="320" y2="80" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3,3"/>
+              <line x1="0" y1="45" x2="320" y2="45" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3,3"/>
+              <!-- Заливка волны -->
+              <path d="M 10,80 Q 80,72 160,50 T 310,20 L 310,95 L 10,95 Z" fill="url(#chartGradient)"/>
+              <!-- Линия тренда -->
+              <path d="M 10,80 Q 80,72 160,50 T 310,20" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round"/>
+              <!-- Точки -->
+              <circle cx="10" cy="80" r="4" fill="#10b981"/>
+              <circle cx="160" cy="50" r="4" fill="#38bdf8"/>
+              <circle cx="310" cy="20" r="5" fill="#fbbf24" stroke="#fff" stroke-width="1.5"/>
+            </svg>
+          </div>
+          <div style="display:flex; justify-content:space-between; font-size:10.5px; color:var(--text-muted); padding:0 4px;">
+            <span>Сейчас</span>
+            <span>+2 мес</span>
+            <span>+4 мес</span>
+            <span style="color:#fbbf24; font-weight:600;">+6 мес (Цель)</span>
           </div>
         </div>
 
-        <!-- Свободный накопительный фонд LITE -->
-        <div class="glass-card" style="border-color:rgba(56,189,248,0.35); background:linear-gradient(135deg, rgba(56,189,248,0.12), rgba(255,255,255,0.02)); padding:18px; margin-top:16px;">
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <div>
-              <div style="font-size:11px; font-weight:700; color:#38bdf8; text-transform:uppercase; letter-spacing:0.5px;">💰 Свободный фонд советника</div>
-              <div style="font-size:24px; font-weight:800; color:#fff; margin-top:2px;" id="hubAllocatedPoolDisplay">₽ 0.00</div>
-            </div>
-            <button class="btn-add-inline" style="background:#0284c7; border:none; padding:8px 14px; font-size:12px;" onclick="openDistributeFundModal()">
-              Перевести в цель →
+        <!-- КАРТОЧКА RUNWAY И ДЕТЕКТОР УТЕЧЕК -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px;">
+          <div class="glass-card" style="padding:14px;">
+            <div style="font-size:11px; color:var(--text-muted);">Подушка (Runway)</div>
+            <div style="font-size:18px; font-weight:800; color:#38bdf8; margin:4px 0;" id="liteRunwayVal">0 мес.</div>
+            <div style="font-size:10.5px; color:var(--text-muted); line-height:1.3;">Срок жизни без новых доходов при среднем чеке</div>
+          </div>
+          <div class="glass-card" style="padding:14px;">
+            <div style="font-size:11px; color:var(--text-muted);">Утечки бюджета</div>
+            <div style="font-size:18px; font-weight:800; color:#fb7185; margin:4px 0;" id="liteLeaksVal">0 ₽/мес</div>
+            <div style="font-size:10.5px; color:var(--text-muted); line-height:1.3;">Импульсивные мелкие траты (потенциал экономии)</div>
+          </div>
+        </div>
+
+        <!-- ИНТЕРАКТИВНЫЙ БЛОК: СТРАТЕГИЯ ОТКЛАДЫВАНИЯ ДЕНЕГ -->
+        <div class="glass-card" style="padding:16px; margin-bottom:14px; border-color:rgba(16,185,129,0.3); background:linear-gradient(145deg, rgba(16,185,129,0.08) 0%, rgba(255,255,255,0.02) 100%);">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <div style="font-size:11px; text-transform:uppercase; color:#34d399; font-weight:800; letter-spacing:0.5px;">Стратегия откладывания денег</div>
+            <span id="activeStrategyBadge" style="font-size:11px; font-weight:700; color:#fbbf24; background:rgba(217,119,6,0.18); border:1px solid rgba(217,119,6,0.3); padding:2px 8px; border-radius:8px;">Баффет (18%)</span>
+          </div>
+          <p style="font-size:12px; color:var(--text-muted); line-height:1.4; margin-bottom:12px;">
+            Выберите проверенный алгоритм распределения входящих доходов. Советник автоматически направляет безопасный процент в ваш фонд.
+          </p>
+
+          <!-- Селектор готовых стратегий -->
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:14px;" id="strategySelectorGrid">
+            <button type="button" class="chip-sum active" style="padding:10px 8px; text-align:left; border-radius:12px; height:auto; display:flex; flex-direction:column; gap:3px;" onclick="selectStrategy('buffett', this)">
+              <span style="font-size:12px; font-weight:700; color:#fff;">💡 50/30/20 & Баффет</span>
+              <span style="font-size:10px; color:#34d399;">18% в фонд сбережений</span>
+            </button>
+            <button type="button" class="chip-sum" style="padding:10px 8px; text-align:left; border-radius:12px; height:auto; display:flex; flex-direction:column; gap:3px;" onclick="selectStrategy('clason', this)">
+              <span style="font-size:12px; font-weight:700; color:#fff;">📖 Вавилон (Клейсон)</span>
+              <span style="font-size:10px; color:#38bdf8;">10% «Заплати себе»</span>
+            </button>
+            <button type="button" class="chip-sum" style="padding:10px 8px; text-align:left; border-radius:12px; height:auto; display:flex; flex-direction:column; gap:3px;" onclick="selectStrategy('ramsey', this)">
+              <span style="font-size:12px; font-weight:700; color:#fff;">🎯 Снежный ком (Рамзи)</span>
+              <span style="font-size:10px; color:#fb7185;">25% (акцент на долги)</span>
+            </button>
+            <button type="button" class="chip-sum" style="padding:10px 8px; text-align:left; border-radius:12px; height:auto; display:flex; flex-direction:column; gap:3px;" onclick="selectStrategy('halal', this)">
+              <span style="font-size:12px; font-weight:700; color:#fff;">⚖️ Умеренность & Кард</span>
+              <span style="font-size:10px; color:#fbbf24;">15% + Закат & Резерв</span>
             </button>
           </div>
-          <div style="font-size:12px; color:var(--text-muted); margin-top:8px; line-height:1.45;">
-            Здесь хранятся средства, сбережённые алгоритмом. Направьте их на выбранную цель («Хадж», авто) или оставьте в резерве.
+
+          <!-- Детализация активной стратегии -->
+          <div style="background:rgba(0,0,0,0.35); border:1px solid rgba(255,255,255,0.06); border-radius:14px; padding:12px; font-size:12px; line-height:1.45;">
+            <div id="strategyDescText" style="color:#e5e7eb; margin-bottom:8px;">
+              <strong>Правило Баффета & Э. Уоррен:</strong> Сначала откладывается 18% в фонд советника до совершения повседневных трат. На жизнь и потребности остается 82%.
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-muted); border-top:1px solid rgba(255,255,255,0.06); padding-top:8px;">
+              <span>Авто-отчисление с дохода 100 000 ₽:</span>
+              <span id="strategyCalculationExample" style="color:#34d399; font-weight:700;">+18 000 ₽ в фонд</span>
+            </div>
           </div>
         </div>
 
-        <!-- Умный советник отчислений (Клейсон, Баффет) -->
-        <div class="advice-hero-card" style="margin-top:14px;">
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <span style="font-size:11px; font-weight:700; color:#34d399; background:rgba(16,185,129,0.18); padding:3px 10px; border-radius:8px;">
-              📚 Метод Дж. Клейсона & Э. Уоррен (50/30/20)
-            </span>
-          </div>
-          
-          <h3 style="font-size:17px; font-weight:700; margin:8px 0 4px;">Безопасный процент отчислений</h3>
-          <p style="font-size:12.5px; color:#e5e7eb; line-height:1.45;" id="adviceDynamicReason">
-            На основе дохода 185 000 ₽, текущих обязательств и риска кассового разрыва:
-          </p>
-          <div style="font-size:36px; font-weight:900; color:#34d399; margin:8px 0;">
-            18% <span style="font-size:14px; font-weight:500; color:var(--text-muted);">= 33 300 ₽ в месяц</span>
-          </div>
-
-          <div id="urgentDebtWarning" style="display:none; background:rgba(244,63,94,0.15); border:1px solid rgba(244,63,94,0.3); border-radius:14px; padding:10px 12px; margin-bottom:12px; font-size:12px; color:#fecdd3; line-height:1.45;">
-            🚨 <strong>Внимание: подходит срок возврата долга!</strong> Все 100% откладываемых средств направляются на срочное погашение.
-          </div>
-
-          <div style="background:rgba(0,0,0,0.35); border:1px solid rgba(255,255,255,0.1); border-radius:16px; padding:14px; margin-top:10px;">
-            <div id="adviceStatusMessage" style="font-size:13px; color:#fff; margin-bottom:12px; line-height:1.45;">
-              Отложить 18% (33 300 ₽) в <strong>Свободный накопительный фонд</strong>?
-            </div>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-              <button class="btn-submit income" id="btnAcceptAdvice" style="margin-top:0; padding:11px 8px; font-size:13px;" onclick="executeLiteAdvice()">✓ Принять совет</button>
-              <button class="btn-submit" id="btnDeclineAdvice" style="margin-top:0; padding:11px 8px; font-size:13px; background:rgba(255,255,255,0.08); border:1px solid var(--glass-border);" onclick="declineLiteAdvice()">✕ Свой план</button>
+        <!-- Мудрость капитала для подписчиков -->
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <div style="background:rgba(16,185,129,0.05); border:1px solid rgba(16,185,129,0.2); border-radius:14px; padding:12px;">
+            <div style="font-size:11.5px; color:#34d399; font-weight:700; margin-bottom:4px;">⚖️ Шариатское правило достатка</div>
+            <div style="font-size:12px; color:#e5e7eb; line-height:1.4;">
+              Своевременный возврат долгов очищает баракат. Советник отдаёт 100% приоритет закрытию взятых обязательств.
             </div>
           </div>
 
-          <!-- Кастомный план -->
-          <div id="customPlanBox" style="display:none; margin-top:14px; background:rgba(0,0,0,0.45); border:1px solid rgba(56,189,248,0.3); border-radius:18px; padding:16px;">
-            <div style="font-size:14px; font-weight:700; color:#38bdf8; margin-bottom:12px;">🛠 Ручная настройка отчислений</div>
-            <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:6px;">
-              <span>Процент от дохода:</span>
-              <span style="font-weight:700; color:#38bdf8;" id="customPercentLabel">12% (22 200 ₽/мес)</span>
-            </div>
-            <input type="range" id="customPercentSlider" min="5" max="40" value="12" step="1" style="width:100%; accent-color:#38bdf8; cursor:pointer;" oninput="onCustomPercentChange(this.value)">
-            
-            <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:6px; margin:12px 0;" id="customSplitButtons">
-              <button type="button" class="chip-sum active" style="font-size:10.5px; padding:6px 2px; text-align:center;" onclick="setCustomSplit(100, 0, this)">100% В фонд</button>
-              <button type="button" class="chip-sum" style="font-size:10.5px; padding:6px 2px; text-align:center;" onclick="setCustomSplit(50, 50, this)">50% Фонд / 50% Долг</button>
-              <button type="button" class="chip-sum" style="font-size:10.5px; padding:6px 2px; text-align:center;" onclick="setCustomSplit(0, 100, this)">100% На долг</button>
-            </div>
-
-            <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:10px; font-size:12px; margin-bottom:12px; line-height:1.5;">
-              <div>💰 <strong>Откладывать:</strong> <span id="customTotalSumText" style="color:#fff; font-weight:700;">22 200 ₽</span></div>
-              <div style="color:#38bdf8;">• В накопительный фонд: <span id="customGoalSumText">+ 22 200 ₽</span></div>
-              <div style="color:#fb7185;">• Погашение долга: <span id="customDebtSumText">− 0 ₽</span></div>
-            </div>
-            <button class="btn-submit blue" id="btnApplyCustomPlan" onclick="executeCustomPlan()">✓ Применить мой план</button>
-          </div>
-        </div>
-
-        <!-- Аналитика Runway -->
-        <div class="glass-card" style="margin-top:14px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-            <div style="font-size:14px; font-weight:700; color:#38bdf8; display:flex; align-items:center; gap:6px;">
-              <span>⏳</span> Runway & Капитал
-            </div>
-            <span style="font-size:11px; color:#34d399; font-weight:600;">+492 000 ₽ к 2027</span>
-          </div>
-          <div style="font-size:12px; color:var(--text-muted); line-height:1.45;">
-            При норме расходов 58.4k ₽/мес и сбережений 18%, вы сможете прожить без новых доходов <strong>8.4 месяца</strong>. Ваш прогнозируемый капитал через полгода составит <strong>1 334 500 ₽</strong>.
-          </div>
-        </div>
-
-        <!-- Фундамент капитала (Мудрость) -->
-        <div style="margin-top:20px;">
-          <h3 style="font-size:15px; font-weight:700; margin-bottom:12px; margin-left:4px;">Фундамент вашего капитала</h3>
-          <div style="display:flex; flex-direction:column; gap:12px;">
-            <!-- Религия -->
-            <div style="background:rgba(16,185,129,0.05); border:1px solid rgba(16,185,129,0.2); border-radius:16px; padding:14px;">
-              <div style="font-size:12px; color:#34d399; font-weight:700; margin-bottom:6px; display:flex; align-items:center; gap:6px;">
-                <span>⚖️</span> Шариат и умеренность (Исраф)
-              </div>
-              <div style="font-size:13px; color:#e5e7eb; line-height:1.45;">
-                «Не будь слишком скуп и не расточительствуй» (Коран 17:29). Советник Hisab рассчитывает идеальный баланс: откладывать без ущерба для жизни и вовремя гасить долги (Кард).
-              </div>
-            </div>
-
-            <!-- Книги -->
-            <div style="background:rgba(56,189,248,0.05); border:1px solid rgba(56,189,248,0.2); border-radius:16px; padding:14px;">
-              <div style="font-size:12px; color:#38bdf8; font-weight:700; margin-bottom:6px; display:flex; align-items:center; gap:6px;">
-                <span>📖</span> Дж. Клейсон, «Самый богатый человек в Вавилоне»
-              </div>
-              <div style="font-size:13px; color:#e5e7eb; line-height:1.45;">
-                Главный закон богатства — «Сначала заплати себе». Алгоритм Lite автоматически формирует резерв (10-20%) до того, как деньги разойдутся на повседневные нужды.
-              </div>
-            </div>
-
-            <!-- Успешные люди -->
-            <div style="background:rgba(217,119,6,0.05); border:1px solid rgba(217,119,6,0.2); border-radius:16px; padding:14px;">
-              <div style="font-size:12px; color:#fbbf24; font-weight:700; margin-bottom:6px; display:flex; align-items:center; gap:6px;">
-                <span>💡</span> Уоррен Баффет (Инвестор)
-              </div>
-              <div style="font-size:13px; color:#e5e7eb; line-height:1.45;">
-                «Не откладывайте то, что осталось после трат. Тратьте то, что осталось после сбережений». Инструменты Hisab Lite прививают именно эту привычку.
-              </div>
+          <div style="background:rgba(217,119,6,0.05); border:1px solid rgba(217,119,6,0.2); border-radius:14px; padding:12px;">
+            <div style="font-size:11.5px; color:#fbbf24; font-weight:700; margin-bottom:4px;">💡 Правило Уоррена Баффета</div>
+            <div style="font-size:12px; color:#e5e7eb; line-height:1.4;">
+              «Сначала отложи, потом трать». Ваши 10% от любого входящего чека сохраняются прямо в фонде советника.
             </div>
           </div>
         </div>
@@ -1245,7 +1138,7 @@
     </div>
   </div>
 
-  <!-- Нижний бар навигации (4 РАЗДЕЛА: ОБЗОР, АНАЛИТИКА, ЦЕЛИ/ДОЛГИ, HISAB LITE) -->
+  <!-- Нижний бар навигации -->
   <div class="bottom-nav">
     <button class="nav-tab active" id="tab-overview" onclick="switchTab('overview', this)">
       <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
@@ -1440,8 +1333,8 @@
 
   <!-- Логика скрипта -->
   <script>
-    // Постоянное хранение данных в localStorage и Cloud
-    const STORAGE_KEY = 'hisab_finance_app_data_v1';
+    // Постоянное хранение данных
+    const STORAGE_KEY = 'hisab_finance_app_data_v2';
 
     let cloudStorageEnabled = false;
     let cloudDb = null;
@@ -1449,108 +1342,45 @@
     let cloudUser = null;
     let cloudAppId = 'hisab-finance';
 
-    async function initFirebase() {
-       try {
-         const { initializeApp } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js");
-         const { getAuth, signInAnonymously, signInWithCustomToken } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js");
-         const { getFirestore, doc, getDoc, setDoc } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
-
-         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
-         if (!firebaseConfig) return false;
-
-         cloudAppId = typeof __app_id !== 'undefined' ? __app_id : 'hisab-finance-app';
-         const app = initializeApp(firebaseConfig);
-         cloudDb = getFirestore(app);
-         cloudAuth = getAuth(app);
-
-         if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-           await signInWithCustomToken(cloudAuth, __initial_auth_token);
-         } else {
-           await signInAnonymously(cloudAuth);
-         }
-         cloudUser = cloudAuth.currentUser;
-         cloudStorageEnabled = true;
-         
-         window._firebase_doc = doc;
-         window._firebase_getDoc = getDoc;
-         window._firebase_setDoc = setDoc;
-
-         return true;
-       } catch (e) {
-         console.warn("Ошибка инициализации облака", e);
-         return false;
-       }
-    }
-
+    // ЧИСТОЕ НАЧАЛЬНОЕ СОСТОЯНИЕ: СТРОГО 0 ₽ БАЛАНС, ПУСТЫЕ СПИСКИ
     let appData = {
-      baseBalanceRub: 842500,
-      allocatedFundRub: 0, // Отдельный накопительный фонд от советника
-      currentPlan: 'lite', // По умолчанию активен Lite
+      baseBalanceRub: 0,
+      allocatedFundRub: 0, // Накопительный фонд советника
+      currentPlan: 'free', // По умолчанию базовый бесплатный тариф
       planPeriod: 'month',
-      userAdviceDecision: null,
-      userCustomPercent: 18,
-      userGoalsShare: 100, // По умолчанию идет в накопительный фонд
-      userDebtShare: 0,
-      liteAdviceApplied: false,
-      transactions: [
-        { id: 1, title: 'Доход от проекта', time: 'Сегодня, 18:20', icon: '💼', type: 'income', rubAmount: 85000 },
-        { id: 2, title: 'Супермаркет', time: 'Сегодня, 14:10', icon: '🛒', type: 'expense', rubAmount: -3450 },
-        { id: 3, title: 'Заправка (АИ-95)', time: 'Вчера, 21:05', icon: '⛽', type: 'expense', rubAmount: -2100 }
-      ],
-      goals: [
-        { id: 'g1', title: 'Паломничество Хадж', icon: '🕋', targetRub: 500000, currentRub: 320000 },
-        { id: 'g2', title: 'Семейный автомобиль', icon: '🚗', targetRub: 1200000, currentRub: 450000 },
-        { id: 'g3', title: 'Подушка безопасности', icon: '🛡', targetRub: 300000, currentRub: 280000 }
-      ],
-      debts: [
-        { id: 'd1', person: 'Поставщик стройматериалов', type: 'borrowed', rubAmount: 15000, due: 'до 15 ноября' },
-        { id: 'd2', person: 'Рустам (партнер по делу)', type: 'lent', rubAmount: 50000, due: 'до конца месяца' }
-      ]
+      activeStrategy: 'buffett', // 'buffett' | 'clason' | 'ramsey' | 'halal'
+      strategyPercent: 18,
+      transactions: [],
+      goals: [],
+      debts: []
     };
 
-    async function loadSavedData() {
-      // 1. Попытка загрузить из защищенного облака (надежно, не стирается Telegram)
-      const hasCloud = await initFirebase();
-      if (hasCloud && cloudUser && cloudDb) {
-         try {
-            const docRef = window._firebase_doc(cloudDb, 'artifacts', cloudAppId, 'users', cloudUser.uid, 'data', 'appData');
-            const docSnap = await window._firebase_getDoc(docRef);
-            if (docSnap.exists()) {
-               const cloudData = docSnap.data();
-               if (cloudData && typeof cloudData.baseBalanceRub === 'number') {
-                  appData = Object.assign(appData, cloudData);
-                  return; // Успешно загрузили из облака
-               }
-            }
-         } catch(e) { console.warn("Ошибка чтения облака", e); }
+    const STRATEGIES = {
+      buffett: {
+        name: 'Баффет (18%)',
+        percent: 18,
+        desc: '<strong>Правило Баффета & Э. Уоррен:</strong> Сначала откладывается 18% в фонд советника до совершения повседневных трат. На жизнь и текущие расходы остается 82%. Идеальный баланс роста капитала.',
+        example: '+18 000 ₽ в фонд'
+      },
+      clason: {
+        name: 'Вавилон (10%)',
+        percent: 10,
+        desc: '<strong>Джордж Клейсон («Самый богатый человек в Вавилоне»):</strong> Закон «Заплати себе 1/10 часть всего заработанного». Мягкий комфортный старт для создания первой подушки без смены привычек.',
+        example: '+10 000 ₽ в фонд'
+      },
+      ramsey: {
+        name: 'Снежный ком (25%)',
+        percent: 25,
+        desc: '<strong>Метод Дэйва Рамзи:</strong> Усиленный режим накоплений (25%). Если у вас есть долги (Кард), советник отдает 100% приоритет их ускоренному закрытию для снятия психологического груза.',
+        example: '+25 000 ₽ в фонд'
+      },
+      halal: {
+        name: 'Умеренность (15%)',
+        percent: 15,
+        desc: '<strong>Шариатская умеренность (Исраф):</strong> Золотая середина между сбережениями (15%), регулярным выделением средств на Садака и подготовкой к выплате обязательного Заката (2.5%).',
+        example: '+15 000 ₽ в фонд'
       }
-
-      // 2. Резервный вариант: локальное хранилище (может сбрасываться)
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (parsed && typeof parsed.baseBalanceRub === 'number') {
-            appData = Object.assign(appData, parsed);
-          }
-        }
-      } catch (e) {}
-    }
-
-    function saveAppData() {
-      // 1. Сохраняем локально на всякий случай
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
-      } catch (e) {}
-
-      // 2. Гарантированно сохраняем в облако, чтобы данные не слетали при закрытии
-      if (cloudStorageEnabled && cloudUser && cloudDb) {
-         try {
-            const docRef = window._firebase_doc(cloudDb, 'artifacts', cloudAppId, 'users', cloudUser.uid, 'data', 'appData');
-            window._firebase_setDoc(docRef, appData, { merge: true });
-         } catch(e) { console.warn("Ошибка записи в облако", e); }
-      }
-    }
+    };
 
     let currentCurrency = 'RUB';
     let currentModalType = 'income';
@@ -1567,28 +1397,38 @@
     };
 
     const INCOME_CATEGORIES = [
-      { id: 'freelance', name: 'Проект / Фриланс', icon: '💼' },
       { id: 'salary', name: 'Зарплата', icon: '🏢' },
+      { id: 'freelance', name: 'Проект / Фриланс', icon: '💼' },
       { id: 'business', name: 'Торговля / Бизнес', icon: '📈' },
-      { id: 'investment', name: 'Партнерство / Мудараба', icon: '🤝' },
-      { id: 'gift', name: 'Подарок / Грант', icon: '🎁' },
+      { id: 'gift', name: 'Подарок / Садака', icon: '🎁' },
       { id: 'other_inc', name: 'Прочий доход', icon: '💰' }
     ];
 
     const EXPENSE_CATEGORIES = [
       { id: 'supermarket', name: 'Супермаркет', icon: '🛒' },
-      { id: 'fuel', name: 'Заправка / Авто', icon: '⛽' },
+      { id: 'fuel', name: 'Транспорт / Авто', icon: '⛽' },
       { id: 'home', name: 'Дом / Семья', icon: '🏠' },
       { id: 'cafe', name: 'Кафе и еда', icon: '☕' },
       { id: 'sadaka', name: 'Садака / Мечеть', icon: '🎁' },
       { id: 'shopping', name: 'Покупки', icon: '🛍' }
     ];
 
-    function showCustomNotice(message) {
-      const modal = document.getElementById('customNoticeModal');
-      const text = document.getElementById('customNoticeText');
-      if (text) text.innerText = message;
-      if (modal) modal.classList.add('open');
+    async function loadSavedData() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed.baseBalanceRub === 'number') {
+            appData = Object.assign(appData, parsed);
+          }
+        }
+      } catch (e) {}
+    }
+
+    function saveAppData() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+      } catch (e) {}
     }
 
     function formatCurrency(rubAmount, fractionDigits = 0) {
@@ -1597,29 +1437,25 @@
       return `${config.symbol} ${converted.toLocaleString('ru-RU', { minimumFractionDigits: fractionDigits, maximumFractionDigits: fractionDigits })}`;
     }
 
-    // Проверка наличия горящих долгов (где подходит срок)
-    function checkUrgentDebt() {
-      const borrowedDebts = appData.debts.filter(d => d.type === 'borrowed' && d.rubAmount > 0);
-      if (borrowedDebts.length === 0) return null;
-      return borrowedDebts[0];
-    }
-
     function updateDisplays() {
       const config = RATES[currentCurrency];
       const convertedBalance = (appData.baseBalanceRub / config.rate).toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      const convertedZakat = ((appData.baseBalanceRub * 0.025) / config.rate).toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      const zakatRub = appData.baseBalanceRub >= 450000 ? (appData.baseBalanceRub * 0.025) : 0;
+      const convertedZakat = (zakatRub / config.rate).toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
       const balDisp = document.getElementById('balanceDisplay');
       const zakDisp = document.getElementById('zakatDisplay');
       if (balDisp) balDisp.innerText = `${config.symbol} ${convertedBalance}`;
       if (zakDisp) zakDisp.innerText = `${config.symbol} ${convertedZakat}`;
 
-      // Свободный фонд советника на выделенной странице Lite Hub
+      const zakSub = document.getElementById('zakatStatusSub');
+      if (zakSub) {
+        zakSub.innerText = appData.baseBalanceRub >= 450000 ? 'Баланс превысил нисаб (хауль 1 год)' : 'Баланс ниже нисаба (~450 000 ₽)';
+      }
+
+      // Свободный фонд советника (на странице Цели/Долги)
       const poolDisp = document.getElementById('hubAllocatedPoolDisplay');
       if (poolDisp) poolDisp.innerText = formatCurrency(appData.allocatedFundRub || 0);
-
-      const metricFund = document.getElementById('hubMetricFund');
-      if (metricFund) metricFund.innerText = formatCurrency(appData.allocatedFundRub || 0);
 
       const rateSub = document.getElementById('currencyRateSub');
       if (rateSub) {
@@ -1631,73 +1467,93 @@
         }
       }
 
-      // Пересчет аналитических категорий
-      document.querySelectorAll('.cat-sum').forEach(el => {
-        const baseRub = parseFloat(el.getAttribute('data-base-rub'));
-        if (!isNaN(baseRub)) el.innerText = formatCurrency(baseRub);
-      });
-
       renderTransactions();
       renderGoals();
       renderDebts();
-      updateAdvisorDynamicText();
-      updateLiteHubPaywall();
+      renderAnalyticsView();
+      renderLiteSubscriptionView();
       saveAppData();
     }
 
-    function updateLiteHubPaywall() {
-      // Этой функции больше нет, так как мы управляем видимостью блоков в updatePlanUI()
-    }
+    function renderAnalyticsView() {
+      let totalInc = 0;
+      let totalExp = 0;
+      appData.transactions.forEach(t => {
+        if (t.rubAmount > 0) totalInc += t.rubAmount;
+        else totalExp += Math.abs(t.rubAmount);
+      });
 
-    function switchAnalyticsTab(tab) {
-      const expBtn = document.getElementById('btn-an-expense');
-      const incBtn = document.getElementById('btn-an-income');
-      const expBlock = document.getElementById('an-expense-breakdown');
-      const incBlock = document.getElementById('an-income-breakdown');
+      const incEl = document.getElementById('anMonthlyIncome');
+      const expEl = document.getElementById('anMonthlyExpense');
+      if (incEl) incEl.innerText = `+ ${formatCurrency(totalInc)}`;
+      if (expEl) expEl.innerText = `− ${formatCurrency(totalExp)}`;
 
-      if (tab === 'expense') {
-        if (expBtn) expBtn.classList.add('active');
-        if (incBtn) incBtn.classList.remove('active');
-        if (expBlock) expBlock.style.display = 'block';
-        if (incBlock) incBlock.style.display = 'none';
-      } else {
-        if (incBtn) incBtn.classList.add('active');
-        if (expBtn) expBtn.classList.remove('active');
-        if (incBlock) incBlock.style.display = 'block';
-        if (expBlock) expBlock.style.display = 'none';
+      const sum = totalInc + totalExp;
+      const incPct = sum > 0 ? Math.round((totalInc / sum) * 100) : 0;
+      const expPct = sum > 0 ? Math.round((totalExp / sum) * 100) : 0;
+
+      const incBar = document.getElementById('anIncomeBar');
+      const expBar = document.getElementById('anExpenseBar');
+      if (incBar) incBar.style.width = incPct + '%';
+      if (expBar) expBar.style.width = expPct + '%';
+
+      const incText = document.getElementById('anIncomePctText');
+      const expText = document.getElementById('anExpensePctText');
+      if (incText) incText.innerText = `Доход: ${incPct}%`;
+      if (expText) expText.innerText = `Расход: ${expPct}%`;
+
+      const savRate = document.getElementById('anSavingsRate');
+      if (savRate) {
+        const rate = totalInc > 0 ? Math.max(0, Math.round(((totalInc - totalExp) / totalInc) * 100)) : 0;
+        savRate.innerText = `Сбережения: ${rate}%`;
+      }
+
+      const nisabText = document.getElementById('nisabStatusText');
+      if (nisabText) {
+        nisabText.innerText = appData.baseBalanceRub >= 450000 ? 'Превышен ✓' : 'Ниже порога';
+        nisabText.style.color = appData.baseBalanceRub >= 450000 ? '#34d399' : '#fbbf24';
       }
     }
 
-    function updateAdvisorDynamicText() {
-      const urgentDebt = checkUrgentDebt();
-      const warningBox = document.getElementById('urgentDebtWarning');
-      const statusMsg = document.getElementById('adviceStatusMessage');
-      const descDesc = document.getElementById('advisorSummaryDesc');
-      const headerTag = document.getElementById('advisorStatusHeaderTag');
+    function renderLiteSubscriptionView() {
+      const isLite = appData.currentPlan === 'lite';
+      const salesBlock = document.getElementById('lite-sales-block');
+      const dashBlock = document.getElementById('lite-dashboard-block');
 
-      const totalSaving = Math.round((185000 * 18) / 100); // 33 300 ₽
+      if (salesBlock) salesBlock.style.display = isLite ? 'none' : 'block';
+      if (dashBlock) dashBlock.style.display = isLite ? 'block' : 'none';
 
-      if (urgentDebt) {
-        if (warningBox) warningBox.style.display = 'block';
-        if (headerTag) headerTag.innerText = '🚨 Срочный долг!';
-        if (descDesc) {
-          descDesc.innerHTML = `Подходит срок возврата долга (${escapeHtml(urgentDebt.person)}: ${formatCurrency(urgentDebt.rubAmount)}). Все 100% отчислений пойдут на его погашение!`;
-        }
-        if (statusMsg) {
-          const payAmount = Math.min(totalSaving, urgentDebt.rubAmount);
-          const remainToFund = totalSaving - payAmount;
-          statusMsg.innerHTML = `Подходит срок возврата долга! Все <strong>${payAmount.toLocaleString('ru-RU')} ₽</strong> будут направлены на погашение долга перед <em>«${escapeHtml(urgentDebt.person)}»</em>.${remainToFund > 0 ? ` Остаток ${remainToFund.toLocaleString('ru-RU')} ₽ пойдет в ваш свободный накопительный фонд.` : ''}`;
-        }
-      } else {
-        if (warningBox) warningBox.style.display = 'none';
-        if (headerTag) headerTag.innerText = '18% норма →';
-        if (descDesc) {
-          descDesc.innerHTML = `Рекомендуем откладывать 18% (${totalSaving.toLocaleString('ru-RU')} ₽). Средства поступят в ваш Свободный накопительный фонд для выбора целей.`;
-        }
-        if (statusMsg) {
-          statusMsg.innerHTML = `Отложить 18% (${totalSaving.toLocaleString('ru-RU')} ₽) в ваш <strong>Свободный накопительный фонд</strong>? Вы сможете сами решить, в какую цель их перевести!`;
-        }
+      const badge = document.getElementById('planBadge');
+      if (badge) {
+        badge.innerText = isLite ? '✨ Lite активен' : '● Базовый';
+        badge.style.color = isLite ? '#fbbf24' : '#10b981';
       }
+
+      // Расчет проекции капитала и показателей
+      let totalExp = 0;
+      let totalInc = 0;
+      let leakSum = 0;
+      appData.transactions.forEach(t => {
+        if (t.rubAmount > 0) totalInc += t.rubAmount;
+        else {
+          const val = Math.abs(t.rubAmount);
+          totalExp += val;
+          if (['Кафе и еда', 'Покупки'].includes(t.title)) leakSum += val * 0.35;
+        }
+      });
+
+      const burn = totalExp > 0 ? totalExp : 35000;
+      const runwayMonths = (appData.baseBalanceRub / burn).toFixed(1);
+
+      const runwayEl = document.getElementById('liteRunwayVal');
+      if (runwayEl) runwayEl.innerText = `${runwayMonths} мес.`;
+
+      const leaksEl = document.getElementById('liteLeaksVal');
+      if (leaksEl) leaksEl.innerText = formatCurrency(leakSum || 4800) + ' / мес';
+
+      const projected = appData.baseBalanceRub + ((totalInc > 0 ? totalInc * 0.18 : 25000) * 6);
+      const capEl = document.getElementById('chartCapitalProjected');
+      if (capEl) capEl.innerText = formatCurrency(projected);
     }
 
     function switchCurrency(code, btn) {
@@ -1709,121 +1565,40 @@
 
     function switchTab(tabId, btn) {
       document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
-      if (btn) {
-        btn.classList.add('active');
-      } else {
+      if (btn) btn.classList.add('active');
+      else {
         const targetBtn = document.getElementById(`tab-${tabId}`);
         if (targetBtn) targetBtn.classList.add('active');
       }
 
       document.querySelectorAll('.view-content').forEach(view => view.classList.remove('active'));
       const activeView = document.getElementById(`view-${tabId}`);
-      if (activeView) {
-        activeView.classList.add('active');
-      }
+      if (activeView) activeView.classList.add('active');
       window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    function openDedicatedPage(type) {
-      switchTab('lite-center', document.getElementById('tab-lite-center'));
     }
 
     function handleHeaderBadgeClick() {
       switchTab('lite-center', document.getElementById('tab-lite-center'));
     }
 
-    function setPlanPeriod(period) {
-      appData.planPeriod = period;
-      const bMonth = document.getElementById('btn-period-month');
-      const bYear = document.getElementById('btn-period-year');
-      if (bMonth) bMonth.classList.toggle('active', period === 'month');
-      if (bYear) bYear.classList.toggle('active', period === 'year');
-
-      const pLite = document.getElementById('price-lite');
-      const perLite = document.getElementById('period-lite');
-      if (pLite && perLite) {
-        if (period === 'month') {
-          pLite.innerText = '179 ₽';
-          perLite.innerText = '/ месяц (-38%)';
-        } else {
-          pLite.innerText = '1 790 ₽';
-          perLite.innerText = '/ год (149 ₽/мес)';
-        }
-      }
-      saveAppData();
-    }
-
-    // Маркетинговый калькулятор окупаемости подписки (ROI)
-    function updateRoiCalc(incomeVal) {
-      const income = parseInt(incomeVal, 10);
-      const incEl = document.getElementById('roiIncomeVal');
-      const savEl = document.getElementById('roiSavingsVal');
-
-      if (incEl) incEl.innerText = `${income.toLocaleString('ru-RU')} ₽`;
-      
-      // По статистике поведенческой экономики, неосознанные импульсивные траты составляют ~12-15% бюджета
-      const estimatedSavings = Math.round(income * 0.12);
-      if (savEl) savEl.innerText = `+ ${estimatedSavings.toLocaleString('ru-RU')} ₽ / мес`;
-    }
-
-    // Таймер специального предложения для повышения срочности (FOMO)
-    function startSalesTimer() {
-      let secondsLeft = 14 * 60 + 59;
-      const timerEl = document.getElementById('salesTimer');
-      if (!timerEl) return;
-
-      setInterval(() => {
-        if (secondsLeft <= 0) {
-          secondsLeft = 15 * 60; // мягкий циклический перезапуск
-        }
-        secondsLeft--;
-        const mins = Math.floor(secondsLeft / 60);
-        const secs = secondsLeft % 60;
-        timerEl.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-      }, 1000);
-    }
-
-    function activateAndOpenPlan(plan) {
-      appData.currentPlan = plan;
-      updatePlanUI();
-      openDedicatedPage(plan);
-      saveAppData();
-    }
-
     function activatePlan(plan) {
       appData.currentPlan = plan;
-      updatePlanUI();
+      renderLiteSubscriptionView();
       saveAppData();
-      showCustomNotice(plan === 'free' ? 'Переключено на Базовый тариф' : 'Тариф активирован');
-    }
-
-    function updatePlanUI() {
-      const planBadge = document.getElementById('planBadge');
-      
-      const salesBlock = document.getElementById('lite-sales-block');
-      const dashboardBlock = document.getElementById('lite-dashboard-block');
-
-      if (appData.currentPlan === 'lite') {
-        if (planBadge) {
-          planBadge.innerText = '✨ Hisab Lite';
-          planBadge.style.color = '#34d399';
-        }
-        if (salesBlock) salesBlock.style.display = 'none';
-        if (dashboardBlock) dashboardBlock.style.display = 'block';
-      } else {
-        if (planBadge) {
-          planBadge.innerText = '● Базовый';
-          planBadge.style.color = '#10b981';
-        }
-        if (salesBlock) salesBlock.style.display = 'block';
-        if (dashboardBlock) dashboardBlock.style.display = 'none';
-      }
+      showCustomNotice(plan === 'free' ? 'Переключено на Базовый тариф' : '✨ Тариф Hisab Lite активирован!');
     }
 
     function renderTransactions() {
       const container = document.getElementById('txListContainer');
       if (!container) return;
       container.innerHTML = '';
+
+      if (appData.transactions.length === 0) {
+        container.innerHTML = '<div style="text-align:center; padding:18px; color:var(--text-muted); font-size:13px;">Операций пока нет. Нажмите «+ Доход» или «− Расход».</div>';
+        const badge = document.getElementById('txCountBadge');
+        if (badge) badge.innerText = '0 операций';
+        return;
+      }
 
       appData.transactions.forEach(tx => {
         const item = document.createElement('div');
@@ -1853,6 +1628,11 @@
       const container = document.getElementById('goalsListContainer');
       if (!container) return;
       container.innerHTML = '';
+
+      if (appData.goals.length === 0) {
+        container.innerHTML = '<div class="glass-card" style="text-align:center; padding:16px; color:var(--text-muted); font-size:13px;">Нет активных целей. Создайте цель «Хадж» или «Резерв».</div>';
+        return;
+      }
 
       appData.goals.forEach(goal => {
         const percent = Math.min(100, Math.round((goal.currentRub / goal.targetRub) * 100));
@@ -1891,6 +1671,13 @@
       let totalBorrowed = 0;
       let totalLent = 0;
 
+      if (appData.debts.length === 0) {
+        container.innerHTML = '<div style="text-align:center; padding:12px; color:var(--text-muted); font-size:12.5px;">Долгов нет. Все финансовые обязательства чисты.</div>';
+        document.getElementById('totalBorrowedDisplay').innerText = `− ${formatCurrency(0)}`;
+        document.getElementById('totalLentDisplay').innerText = `+ ${formatCurrency(0)}`;
+        return;
+      }
+
       appData.debts.forEach(debt => {
         if (debt.type === 'borrowed') totalBorrowed += debt.rubAmount;
         else totalLent += debt.rubAmount;
@@ -1927,126 +1714,9 @@
     function settleDebt(debtId) {
       const debt = appData.debts.find(d => d.id === debtId);
       if (!debt) return;
-
       appData.debts = appData.debts.filter(d => d.id !== debtId);
-      renderDebts();
       updateDisplays();
       showCustomNotice(`✓ Долг перед "${debt.person}" на сумму ${formatCurrency(debt.rubAmount)} закрыт!`);
-    }
-
-    // ИСПОЛНЕНИЕ СОВЕТА: СРОЧНЫЙ ДОЛГ ИЛИ СВОБОДНЫЙ НАКОПИТЕЛЬНЫЙ ФОНД
-    function executeLiteAdvice() {
-      if (appData.liteAdviceApplied) {
-        showCustomNotice('Советник Lite уже распределил средства текущего периода.');
-        return;
-      }
-
-      const totalAllocation = 33300;
-      const urgentDebt = checkUrgentDebt();
-
-      appData.baseBalanceRub -= totalAllocation;
-
-      if (urgentDebt) {
-        // Если подходит срок долга — 100% денег идут на его погашение
-        const payoffAmount = Math.min(totalAllocation, urgentDebt.rubAmount);
-        urgentDebt.rubAmount -= payoffAmount;
-        const remainder = totalAllocation - payoffAmount;
-
-        if (remainder > 0) {
-          appData.allocatedFundRub = (appData.allocatedFundRub || 0) + remainder;
-        }
-
-        appData.transactions.unshift({
-          id: Date.now(),
-          title: `🚨 Срочное погашение долга: ${urgentDebt.person}`,
-          time: 'Только что',
-          icon: '⚡️',
-          type: 'expense',
-          rubAmount: -totalAllocation
-        });
-
-        showCustomNotice(`🚨 Срок возврата долга! Все средства направлены на ликвидацию долга перед «${urgentDebt.person}» (−${payoffAmount.toLocaleString('ru-RU')} ₽).\nВы защищены от долговой ямы!${remainder > 0 ? `\nОстаток +${remainder.toLocaleString('ru-RU')} ₽ зачислен в ваш Накопительный фонд.` : ''}`);
-      } else {
-        // Долгов со скорым сроком нет — деньги отправляются в накопительный фонд, откуда пользователь САМ выбирает цель!
-        appData.allocatedFundRub = (appData.allocatedFundRub || 0) + totalAllocation;
-
-        appData.transactions.unshift({
-          id: Date.now(),
-          title: '💡 Советник Lite: +18% в накопительный фонд',
-          time: 'Только что',
-          icon: '🛡',
-          type: 'expense',
-          rubAmount: -totalAllocation
-        });
-
-        showCustomNotice(`✓ 33 300 ₽ переведены в ваш Свободный накопительный фонд!\nТеперь вы можете сами в 1 клик перевести их на любую желаемую цель.`);
-      }
-
-      appData.liteAdviceApplied = true;
-      appData.userAdviceDecision = 'accepted';
-      updateDisplays();
-    }
-
-    function declineLiteAdvice() {
-      const box = document.getElementById('customPlanBox');
-      if (box) box.style.display = 'block';
-      onCustomPercentChange(appData.userCustomPercent || 12);
-    }
-
-    function onCustomPercentChange(val) {
-      appData.userCustomPercent = parseInt(val, 10);
-      const total = Math.round((185000 * appData.userCustomPercent) / 100);
-      const goalPart = Math.round((total * appData.userGoalsShare) / 100);
-      const debtPart = total - goalPart;
-
-      const pLabel = document.getElementById('customPercentLabel');
-      const tText = document.getElementById('customTotalSumText');
-      const gText = document.getElementById('customGoalSumText');
-      const dText = document.getElementById('customDebtSumText');
-      const lText = document.getElementById('customLifeSumText');
-
-      if (pLabel) pLabel.innerText = `${appData.userCustomPercent}% (${total.toLocaleString('ru-RU')} ₽/мес)`;
-      if (tText) tText.innerText = `${total.toLocaleString('ru-RU')} ₽`;
-      if (gText) gText.innerText = `+ ${goalPart.toLocaleString('ru-RU')} ₽`;
-      if (dText) dText.innerText = `− ${debtPart.toLocaleString('ru-RU')} ₽`;
-      if (lText) lText.innerText = `${(185000 - total).toLocaleString('ru-RU')} ₽ (${100 - appData.userCustomPercent}%)`;
-    }
-
-    function setCustomSplit(goalsShare, debtShare, btn) {
-      appData.userGoalsShare = goalsShare;
-      appData.userDebtShare = debtShare;
-      document.querySelectorAll('#customSplitButtons .chip-sum').forEach(b => b.classList.remove('active'));
-      if (btn) btn.classList.add('active');
-      onCustomPercentChange(appData.userCustomPercent);
-    }
-
-    function executeCustomPlan() {
-      const total = Math.round((185000 * appData.userCustomPercent) / 100);
-      const fundPart = Math.round((total * appData.userGoalsShare) / 100);
-      const debtPart = total - fundPart;
-
-      const urgentDebt = checkUrgentDebt();
-      if (urgentDebt && debtPart > 0) {
-        urgentDebt.rubAmount = Math.max(0, urgentDebt.rubAmount - debtPart);
-      }
-
-      if (fundPart > 0) {
-        appData.allocatedFundRub = (appData.allocatedFundRub || 0) + fundPart;
-      }
-
-      appData.baseBalanceRub -= total;
-      appData.transactions.unshift({
-        id: Date.now(),
-        title: `🛠 Персональный план: ${appData.userCustomPercent}%`,
-        time: 'Только что',
-        icon: '🎯',
-        type: 'expense',
-        rubAmount: -total
-      });
-
-      appData.liteAdviceApplied = true;
-      updateDisplays();
-      showCustomNotice(`Персональный план применен!\nВ накопительный фонд зачислено +${fundPart.toLocaleString('ru-RU')} ₽.\nНа долги направлено −${debtPart.toLocaleString('ru-RU')} ₽.`);
     }
 
     // -------------------------------------------------------------
@@ -2063,7 +1733,7 @@
       if (select) {
         select.innerHTML = '';
         if (appData.goals.length === 0) {
-          select.innerHTML = '<option value="">Нет созданных целей</option>';
+          select.innerHTML = '<option value="">Сначала создайте хотя бы одну цель</option>';
         } else {
           appData.goals.forEach(g => {
             const opt = document.createElement('option');
@@ -2098,7 +1768,7 @@
       const goalId = document.getElementById('distributeTargetGoalSelect')?.value;
 
       if (!goalId) {
-        showCustomNotice('Сначала создайте хотя бы одну цель');
+        showCustomNotice('Сначала создайте цель для накопления');
         return;
       }
       if (!amount || isNaN(amount) || amount <= 0) {
@@ -2106,7 +1776,7 @@
         return;
       }
       if (amount > (appData.allocatedFundRub || 0)) {
-        showCustomNotice(`В накопительном фонде недостаточно средств (доступно: ${formatCurrency(appData.allocatedFundRub || 0)})`);
+        showCustomNotice(`В фонде недостаточно средств (доступно: ${formatCurrency(appData.allocatedFundRub || 0)})`);
         return;
       }
 
@@ -2115,15 +1785,6 @@
 
       goal.currentRub += amount;
       appData.allocatedFundRub -= amount;
-
-      appData.transactions.unshift({
-        id: Date.now(),
-        title: `🎯 Перевод из фонда: ${goal.title}`,
-        time: 'Только что',
-        icon: goal.icon,
-        type: 'expense',
-        rubAmount: 0 // Деньги уже были списаны при отчислении в фонд, баланс не меняется повторно
-      });
 
       updateDisplays();
       closeDistributeFundModal();
@@ -2196,8 +1857,20 @@
       }
 
       const isInc = currentModalType === 'income';
-      const rubDelta = isInc ? amount : -amount;
-      appData.baseBalanceRub += rubDelta;
+
+      // Если активен тариф Lite, советник автоматически отчисляет процент по выбранной стратегии
+      if (isInc && appData.currentPlan === 'lite') {
+        const stratPct = appData.strategyPercent || 18;
+        const savedPart = Math.round(amount * (stratPct / 100));
+        const freePart = amount - savedPart;
+        appData.baseBalanceRub += freePart;
+        appData.allocatedFundRub = (appData.allocatedFundRub || 0) + savedPart;
+        showCustomNotice(`+${formatCurrency(amount)} учтено!\n💡 ${stratPct}% (${formatCurrency(savedPart)}) отложены по стратегии в фонд советника.`);
+      } else {
+        const rubDelta = isInc ? amount : -amount;
+        appData.baseBalanceRub += rubDelta;
+        showCustomNotice(isInc ? 'Доход успешно зачислен' : 'Расход учтен');
+      }
 
       const title = comment || (selectedCategory ? selectedCategory.name : (isInc ? 'Поступление' : 'Расход'));
       const icon = selectedCategory ? selectedCategory.icon : (isInc ? '💼' : '🛒');
@@ -2205,14 +1878,35 @@
       appData.transactions.unshift({
         id: Date.now(),
         title: title,
-        time: 'Только что',
+        time: 'Сегодня, ' + new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
         icon: icon,
         type: currentModalType,
-        rubAmount: rubDelta
+        rubAmount: isInc ? amount : -amount
       });
 
       updateDisplays();
       closeTxModal();
+    }
+
+    function selectStrategy(stratKey, btn) {
+      if (!STRATEGIES[stratKey]) return;
+      appData.activeStrategy = stratKey;
+      appData.strategyPercent = STRATEGIES[stratKey].percent;
+
+      document.querySelectorAll('#strategySelectorGrid .chip-sum').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+
+      const strat = STRATEGIES[stratKey];
+      const badge = document.getElementById('activeStrategyBadge');
+      const desc = document.getElementById('strategyDescText');
+      const ex = document.getElementById('strategyCalculationExample');
+
+      if (badge) badge.innerText = strat.name;
+      if (desc) desc.innerHTML = strat.desc;
+      if (ex) ex.innerText = strat.example;
+
+      saveAppData();
+      showCustomNotice(`✓ Выбрана стратегия: ${strat.name}`);
     }
 
     function openNewGoalModal() {
@@ -2263,6 +1957,7 @@
       renderGoals();
       saveAppData();
       closeGoalModal();
+      showCustomNotice('✓ Новая цель создана');
     }
 
     function openDepositGoalModal(goalId) {
@@ -2296,6 +1991,11 @@
         return;
       }
 
+      if (appData.baseBalanceRub < amount) {
+        showCustomNotice('Недостаточно средств на свободном остатке');
+        return;
+      }
+
       const goal = appData.goals.find(g => g.id === targetGoalId);
       if (goal) {
         goal.currentRub += amount;
@@ -2309,6 +2009,7 @@
           rubAmount: -amount
         });
         updateDisplays();
+        showCustomNotice(`✓ Цель "${goal.title}" пополнена на ${formatCurrency(amount)}`);
       }
       closeDepositGoalModal();
     }
@@ -2381,12 +2082,14 @@
       renderDebts();
       updateDisplays();
       closeDebtModal();
+      showCustomNotice(`✓ Долг сохранен: ${person}`);
     }
 
     function alertZakatInfo() {
       const config = RATES[currentCurrency];
-      const convertedZakat = ((appData.baseBalanceRub * 0.025) / config.rate).toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      showCustomNotice(`Закат = 2.5% от свободных сбережений при превышении нисаба.\nК выплате: ${config.symbol} ${convertedZakat}`);
+      const zakatRub = appData.baseBalanceRub >= 450000 ? (appData.baseBalanceRub * 0.025) : 0;
+      const convertedZakat = (zakatRub / config.rate).toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      showCustomNotice(`Закат = 2.5% от свободных сбережений при превышении нисаба (~450 000 ₽).\nК выплате: ${config.symbol} ${convertedZakat}`);
     }
 
     function closeModalOnOverlay(e, modalId) {
@@ -2402,20 +2105,18 @@
       });
     }
 
+    function showCustomNotice(msg) {
+      const modal = document.getElementById('customNoticeModal');
+      const textEl = document.getElementById('customNoticeText');
+      if (textEl) textEl.innerText = msg;
+      if (modal) modal.classList.add('open');
+    }
+
     // Инициализация при старте
     window.addEventListener('DOMContentLoaded', async () => {
-      // Показываем индикатор синхронизации, пока тянутся данные из облака
-      showCustomNotice('☁️ Синхронизация данных...');
-      
       await loadSavedData();
-      
-      // Скрываем окно после успешной загрузки
-      const modal = document.getElementById('customNoticeModal');
-      if(modal) modal.classList.remove('open');
-
-      updatePlanUI();
+      renderLiteSubscriptionView();
       updateDisplays();
-      startSalesTimer();
     });
   </script>
 </body>
