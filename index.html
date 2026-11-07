@@ -2,807 +2,996 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Hisab Finance</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Hisab Finance UI</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     :root {
-      --bg-color: #0b0e14;
-      --card-bg: #151a24;
-      --card-hover: #1c2331;
-      --text-main: #ffffff;
-      --text-muted: #8b96a5;
-      --accent: #00d285;
-      --danger: #ff4757;
-      --primary: #3867d6;
-      --border: #232b3e;
-      --lite-gold: #f5cd79;
-      --card-inner: #0f131c;
+      --bg-dark: #0a0d14;
+      --glass-bg: rgba(255, 255, 255, 0.04);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      --text-main: #f9fafb;
+      --text-muted: #9ca3af;
+      --accent-green: #10b981;
+      --accent-red: #f43f5e;
+      --accent-gold: #d97706;
+      --accent-blue: #38bdf8;
     }
 
-    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-    body { background-color: var(--bg-color); color: var(--text-main); font-size: 15px; padding-bottom: 95px; user-select: none; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif; -webkit-tap-highlight-color: transparent; }
+    body { background-color: var(--bg-dark); color: var(--text-main); min-height: 100vh; background-image: radial-gradient(circle at 10% 10%, rgba(16, 185, 129, 0.08) 0%, transparent 40%), radial-gradient(circle at 90% 25%, rgba(217, 119, 6, 0.07) 0%, transparent 50%); background-attachment: fixed; overflow-x: hidden;}
+    
+    .app-container { width: 100%; max-width: 440px; margin: 0 auto; padding: 16px 16px 105px; display: flex; flex-direction: column; gap: 16px; position: relative; }
 
-    /* Top Bar */
-    .header { padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: rgba(11, 14, 20, 0.95); backdrop-filter: blur(12px); z-index: 40; }
-    .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; }
-    .brand-icon { width: 30px; height: 30px; background: linear-gradient(135deg, #4834d4, #686de0); border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
-    .lite-badge { display: none; background: rgba(245, 205, 121, 0.12); color: var(--lite-gold); border: 1px solid rgba(245, 205, 121, 0.35); font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px; cursor: pointer; }
+    /* Шапка */
+    .header { display: flex; justify-content: space-between; align-items: center; }
+    .header-left { display: flex; align-items: center; gap: 10px; }
+    .app-logo { width: 34px; height: 34px; border-radius: 11px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.3), rgba(217, 119, 6, 0.3)); border: 1px solid rgba(255, 255, 255, 0.12); display: flex; align-items: center; justify-content: center; font-size: 17px; }
+    .header h1 { font-size: 19px; font-weight: 700; }
+    .badge-plan { font-size: 12px; padding: 5px 12px; border-radius: 20px; font-weight: 600; cursor: pointer; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.25); color: var(--accent-green); transition: all 0.2s; }
+    .badge-plan.pro { background: linear-gradient(135deg, rgba(217, 119, 6, 0.25), rgba(245, 158, 11, 0.15)); border: 1px solid rgba(245, 158, 11, 0.4); color: #fbbf24; }
 
-    .container { padding: 16px 20px; }
-    .tab-pane { display: none; }
-    .tab-pane.active { display: block; animation: fadeIn 0.2s ease; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
+    /* Валюты */
+    .currency-pill-container { display: grid; grid-template-columns: repeat(4, 1fr); background: rgba(255, 255, 255, 0.03); border: 1px solid var(--glass-border); padding: 3px; border-radius: 14px; }
+    .currency-pill { background: transparent; border: none; color: var(--text-muted); font-size: 13px; font-weight: 600; padding: 7px 0; border-radius: 11px; cursor: pointer; transition: all 0.2s; }
+    .currency-pill.active { background: rgba(255, 255, 255, 0.14); color: #fff; }
+    .currency-rate-sub { font-size: 11px; color: var(--text-muted); text-align: center; margin-top: -8px; }
 
-    /* Admin Banner */
-    .admin-box { display: none; background: linear-gradient(135deg, #1e272e, #2f3542); border: 1px solid #57606f; border-radius: 16px; padding: 16px; margin-bottom: 16px; }
-    .admin-box-head { display: flex; justify-content: space-between; font-size: 12px; font-weight: 600; color: #a4b0be; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
-    .admin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .admin-stat { background: rgba(0,0,0,0.3); padding: 12px; border-radius: 10px; text-align: center; }
-    .admin-val { font-size: 20px; font-weight: 700; color: #fff; }
-    .admin-sub { font-size: 11px; color: #747d8c; margin-top: 2px; }
+    /* Карточки */
+    .glass-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 24px; padding: 20px; backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px); }
+    .balance-label { font-size: 12.5px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; }
+    .balance-val { font-size: 34px; font-weight: 800; margin: 8px 0 20px; }
+    
+    .quick-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .btn-action { border: none; padding: 12px; border-radius: 14px; font-size: 14px; font-weight: 600; cursor: pointer; transition: transform 0.1s; }
+    .btn-action:active { transform: scale(0.97); }
+    .btn-income { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.25); }
+    .btn-expense { background: rgba(244, 63, 94, 0.15); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.25); }
 
-    /* Currency Tabs */
-    .cur-selector { display: flex; background: var(--card-bg); border-radius: 12px; padding: 3px; margin-bottom: 20px; border: 1px solid var(--border); }
-    .cur-btn { flex: 1; text-align: center; padding: 7px 0; font-size: 13px; font-weight: 600; color: var(--text-muted); border-radius: 9px; cursor: pointer; transition: 0.2s; }
-    .cur-btn.active { background: #2f3640; color: #fff; }
+    /* Панель Админа */
+    .admin-panel { display: none; background: linear-gradient(135deg, rgba(56, 189, 248, 0.15), rgba(255, 255, 255, 0.02)); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 18px; padding: 14px 16px; margin-bottom: 4px; }
+    .admin-stat-row { display: flex; justify-content: space-between; margin-top: 8px; font-size: 13px; }
 
-    /* Main Balance Box */
-    .wallet-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 22px; padding: 22px 20px; text-align: center; margin-bottom: 20px; position: relative; }
-    .wallet-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; }
-    .wallet-val { font-size: 34px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 20px; }
-    .btn-row { display: flex; gap: 10px; }
-    .btn { flex: 1; padding: 14px; border: none; border-radius: 14px; font-size: 15px; font-weight: 600; cursor: pointer; transition: 0.15s; display: flex; align-items: center; justify-content: center; gap: 6px; }
-    .btn:active { transform: scale(0.98); opacity: 0.9; }
-    .btn-inc { background: rgba(0, 210, 133, 0.12); color: var(--accent); border: 1px solid rgba(0, 210, 133, 0.3); }
-    .btn-exp { background: rgba(255, 71, 87, 0.12); color: var(--danger); border: 1px solid rgba(255, 71, 87, 0.3); }
-    .btn-act { background: var(--primary); color: #fff; }
+    /* Закат */
+    .zakat-card { background: linear-gradient(145deg, rgba(217, 119, 6, 0.1), rgba(255, 255, 255, 0.02)); border: 1px solid rgba(217, 119, 6, 0.28); border-radius: 20px; padding: 16px 18px; display: flex; justify-content: space-between; align-items: center; }
+    .zakat-title { font-size: 13px; color: #fbbf24; font-weight: 600; }
+    .zakat-sum { font-size: 17px; font-weight: 700; color: #fef08a; text-align: right; }
 
-    /* Section Headings */
-    .sec-head { display: flex; justify-content: space-between; align-items: center; margin: 24px 0 14px; }
-    .sec-title { font-size: 16px; font-weight: 700; }
-    .sec-link { font-size: 12px; color: var(--primary); cursor: pointer; font-weight: 600; }
+    /* Транзакции */
+    .tx-item { display: flex; justify-content: space-between; align-items: center; padding: 13px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+    .tx-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .tx-info h4 { font-size: 14px; font-weight: 500; }
+    .tx-info span { font-size: 11.5px; color: var(--text-muted); }
+    .tx-amount.pos { color: var(--accent-green); font-weight: 600; }
+    .tx-amount.neg { color: #fff; font-weight: 600; }
+    .empty-state { text-align: center; color: var(--text-muted); font-size: 13px; padding: 15px 0; }
 
-    /* List Rows */
-    .list-box { display: flex; flex-direction: column; gap: 10px; }
-    .card-item { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; }
-    .card-left { display: flex; align-items: center; gap: 12px; }
-    .card-ico { width: 42px; height: 42px; border-radius: 12px; background: var(--card-inner); display: flex; align-items: center; justify-content: center; font-size: 19px; }
-    .card-meta h4 { font-size: 15px; font-weight: 600; margin-bottom: 3px; }
-    .card-meta p { font-size: 12px; color: var(--text-muted); }
-    .card-num { font-size: 15px; font-weight: 700; text-align: right; }
-    .num-plus { color: var(--accent); }
-    .num-minus { color: var(--danger); }
+    /* Вкладки (Views) */
+    .view-content { display: none; flex-direction: column; gap: 16px; }
+    .view-content.active { display: flex; animation: fadeIn 0.25s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* Analytics Segmented Control & Progress Bars */
-    .analytics-toggle-wrap { display: flex; background: var(--card-bg); border-radius: 14px; padding: 4px; margin-bottom: 16px; border: 1px solid var(--border); }
-    .analytics-toggle { flex: 1; padding: 9px 0; text-align: center; font-size: 13px; font-weight: 600; border-radius: 10px; color: var(--text-muted); cursor: pointer; transition: 0.2s; }
-    .analytics-toggle.active { background: #2f3542; color: #fff; }
-
-    .breakdown-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 18px; padding: 16px; margin-bottom: 20px; }
+    /* АНАЛИТИКА КАТЕГОРИЙ */
+    .analytics-toggle { display: grid; grid-template-columns: 1fr 1fr; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--glass-border); padding: 3px; border-radius: 12px; margin-bottom: 14px; }
+    .analytics-toggle-btn { background: transparent; border: none; color: var(--text-muted); font-size: 12.5px; font-weight: 600; padding: 8px 0; border-radius: 9px; cursor: pointer; transition: all 0.2s; }
+    .analytics-toggle-btn.active { background: rgba(255, 255, 255, 0.12); color: #fff; }
     .cat-row { margin-bottom: 14px; }
     .cat-row:last-child { margin-bottom: 0; }
-    .cat-head { display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: 500; margin-bottom: 6px; }
-    .cat-title { display: flex; align-items: center; gap: 8px; }
-    .cat-amt { font-weight: 700; }
-    .cat-track { width: 100%; height: 7px; background: #202738; border-radius: 4px; overflow: hidden; }
-    .cat-fill { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
+    .cat-header { display: flex; justify-content: space-between; align-items: center; font-size: 13.5px; margin-bottom: 6px; }
+    .cat-name { font-weight: 500; }
+    .cat-sum { font-weight: 600; color: #f3f4f6; }
+    .cat-percent { font-size: 12px; color: var(--text-muted); margin-left: 4px; }
+    .cat-bar-bg { background: rgba(255, 255, 255, 0.05); height: 6px; border-radius: 3px; overflow: hidden; }
+    .cat-bar-fill { height: 100%; border-radius: 3px; transition: width 0.4s ease; }
 
-    /* Chart Block */
-    .pro-chart-box { background: var(--card-bg); border: 1px solid var(--border); border-radius: 18px; padding: 18px; position: relative; overflow: hidden; margin-top: 14px; }
-    .pro-lock-blur { position: absolute; inset: 0; background: rgba(11, 14, 20, 0.78); backdrop-filter: blur(4px); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 5; }
+    /* ПРО АНАЛИТИКА (ЗАМОК) */
+    .pro-locked-container { position: relative; overflow: hidden; border-radius: 20px; }
+    .locked-blur { filter: blur(6px); pointer-events: none; user-select: none; opacity: 0.5; transition: all 0.3s ease; }
+    .lock-overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(10, 13, 20, 0.65); z-index: 10; border: 1px solid rgba(255,255,255,0.05); border-radius: 20px; text-align: center; }
+    .btn-unlock { background: linear-gradient(135deg, #10b981, #059669); color: #fff; font-weight: 600; font-size: 13px; padding: 8px 18px; border-radius: 12px; border: none; cursor: pointer; margin-top: 10px; }
 
-    /* Advisor Fund Banner */
-    .advisor-fund { background: linear-gradient(135deg, rgba(30, 144, 255, 0.12), rgba(83, 82, 237, 0.04)); border: 1px solid rgba(56, 103, 214, 0.35); border-radius: 18px; padding: 18px; margin-bottom: 20px; display: none; }
-    .advisor-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-    .advisor-tag { font-size: 13px; font-weight: 700; color: #70a1ff; display: flex; align-items: center; gap: 6px; }
-    .advisor-val { font-size: 26px; font-weight: 800; margin-bottom: 6px; }
-    .advisor-txt { font-size: 12px; color: var(--text-muted); line-height: 1.4; margin-bottom: 14px; }
-    .btn-tf { background: var(--primary); color: #fff; padding: 8px 16px; border-radius: 10px; font-size: 13px; font-weight: 600; border: none; cursor: pointer; }
+    /* Фонд Советника */
+    .advisor-fund-box { background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(255, 255, 255, 0.02)); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 20px; padding: 16px; margin-bottom: 8px; }
+    .advisor-fund-val { font-size: 24px; font-weight: 800; color: #34d399; margin: 8px 0; }
 
-    /* Subscription & Strategies */
-    .sub-card { background: linear-gradient(145deg, #1b202c, #131722); border: 1px solid #3d485e; border-radius: 20px; padding: 22px; text-align: center; margin-bottom: 20px; }
-    .sub-price { font-size: 32px; font-weight: 800; color: #fff; margin: 14px 0; }
-    .strat-item { background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; margin-bottom: 10px; cursor: pointer; transition: 0.2s; }
-    .strat-item.selected { border-color: var(--accent); background: rgba(0, 210, 133, 0.05); }
+    /* ЦЕЛИ И ДОЛГИ: КАРТОЧКИ */
+    .btn-add-inline { background: rgba(255, 255, 255, 0.08); border: 1px solid var(--glass-border); color: #fff; font-size: 12px; font-weight: 600; padding: 5px 12px; border-radius: 12px; cursor: pointer; }
+    .goal-card { background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border); border-radius: 16px; padding: 14px; margin-bottom: 10px; }
+    .goal-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .goal-title { font-weight: 600; font-size: 14.5px; }
+    .btn-deposit { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.25); border-radius: 8px; font-size: 11px; padding: 4px 10px; cursor: pointer; font-weight: 600; }
+    
+    .debt-card { background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border); border-radius: 16px; padding: 14px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+    .debt-badge { font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 4px; margin-bottom: 4px; display: inline-block; }
+    .debt-badge.borrowed { background: rgba(244,63,94,0.15); color: #fb7185; }
+    .debt-badge.lent { background: rgba(16,185,129,0.15); color: #34d399; }
+    
+    /* СТРАТЕГИИ (Методы откладывания) */
+    .strategy-card { background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); border-radius: 16px; padding: 16px; margin-bottom: 12px; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden; }
+    .strategy-card:active { transform: scale(0.98); }
+    .strategy-card.selected { background: rgba(16,185,129,0.1); border-color: rgba(16,185,129,0.4); }
+    .strategy-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .strategy-title { font-size: 15px; font-weight: 700; color: #fff; }
+    .strategy-percent { font-size: 16px; font-weight: 800; color: #34d399; }
+    .strategy-desc { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
 
-    /* Category Chips */
-    .chips-slider { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 12px; -webkit-overflow-scrolling: touch; }
-    .chips-slider::-webkit-scrollbar { display: none; }
-    .chip-item { background: var(--card-inner); border: 1px solid var(--border); padding: 7px 14px; border-radius: 20px; font-size: 13px; white-space: nowrap; cursor: pointer; color: #ced6e0; }
-    .chip-item.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+    /* НИЖНЯЯ НАВИГАЦИЯ */
+    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; max-width: 440px; margin: 0 auto; background: rgba(10, 13, 20, 0.9); border-top: 1px solid var(--glass-border); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); display: flex; justify-content: space-around; align-items: center; padding: 10px 10px 24px; z-index: 100; }
+    .nav-tab { background: none; border: none; color: var(--text-muted); display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 10.5px; font-weight: 500; cursor: pointer; flex: 1; transition: color 0.2s; }
+    .nav-tab.active { color: #fff; }
+    .nav-tab svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 2; transition: transform 0.2s; }
+    .nav-tab.active svg { stroke: #38bdf8; transform: scale(1.1); }
 
-    /* Modals */
-    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.65); backdrop-filter: blur(5px); z-index: 100; display: none; justify-content: center; align-items: flex-end; }
-    .modal-sheet { background: #131822; width: 100%; border-radius: 24px 24px 0 0; padding: 22px; border-top: 1px solid var(--border); max-height: 90vh; overflow-y: auto; }
-    .modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
-    .modal-close { background: var(--card-inner); border: none; width: 32px; height: 32px; border-radius: 16px; color: var(--text-muted); font-size: 18px; cursor: pointer; }
-    .input-box { width: 100%; background: var(--card-inner); border: 1px solid var(--border); padding: 14px; border-radius: 12px; color: #fff; font-size: 15px; margin-bottom: 12px; outline: none; }
-    .input-box:focus { border-color: var(--primary); }
-
-    /* Bottom Navigation */
-    .nav-bar { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(11, 14, 20, 0.96); backdrop-filter: blur(12px); border-top: 1px solid var(--border); padding: 10px 16px 22px; z-index: 50; display: flex; justify-content: center; }
-    .nav-inner { display: flex; width: 100%; max-width: 420px; justify-content: space-around; }
-    .nav-item { background: none; border: none; color: var(--text-muted); display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; cursor: pointer; padding: 4px 10px; }
-    .nav-item svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-    .nav-item.active { color: #70a1ff; }
+    /* МОДАЛКИ */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(5px); display: none; align-items: flex-end; justify-content: center; z-index: 200; }
+    .modal-overlay.open { display: flex; }
+    .modal-sheet { width: 100%; max-width: 440px; background: #111522; border-top-left-radius: 24px; border-top-right-radius: 24px; padding: 22px 20px 34px; display: flex; flex-direction: column; gap: 14px; animation: slideUp 0.25s ease-out; max-height: 90vh; overflow-y: auto;}
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
+    .btn-close { background: rgba(255,255,255,0.08); border: none; color: #fff; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; }
+    .form-input { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 14px; padding: 14px; color: #fff; font-size: 15px; outline: none; }
+    .btn-submit-full { width: 100%; padding: 14px; border-radius: 14px; border: none; font-size: 15px; font-weight: 600; color: #fff; cursor: pointer; background: linear-gradient(135deg, #10b981, #059669); margin-top: 10px; }
+    
+    /* Селектор категорий (чипсы) */
+    .category-chips-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 4px 0; }
+    .cat-chip { background: rgba(255, 255, 255, 0.04); border: 1px solid var(--glass-border); border-radius: 12px; padding: 10px 6px; color: var(--text-muted); font-size: 11.5px; font-weight: 500; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; transition: all 0.15s; text-align: center; }
+    .cat-chip span.emoji { font-size: 18px; }
+    .cat-chip:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
+    .cat-chip.active.income-active { background: rgba(16, 185, 129, 0.18); border-color: rgba(16, 185, 129, 0.4); color: #34d399; }
+    .cat-chip.active.expense-active { background: rgba(244, 63, 94, 0.18); border-color: rgba(244, 63, 94, 0.4); color: #fb7185; }
   </style>
 </head>
 <body>
 
-  <!-- Top Header -->
-  <header class="header">
-    <div class="brand">
-      <div class="brand-icon">☪</div>
-      <span>Hisab Finance</span>
-    </div>
-    <div class="lite-badge" id="topLiteBadge" onclick="switchNav('plans')">✨ Lite активен</div>
-  </header>
-
-  <!-- 1. Вкладка "Обзор" -->
-  <main id="tab-overview" class="container tab-pane active">
-    <!-- Скрытая Админ-Панель (только для ID 8774039431) -->
-    <div class="admin-box" id="adminPanel">
-      <div class="admin-box-head">
-        <span>Панель Управления</span>
-        <span>ID: 8774039431</span>
+  <div class="app-container">
+    
+    <!-- ШАПКА -->
+    <div class="header">
+      <div class="header-left">
+        <div class="app-logo">☪</div>
+        <h1>Hisab Finance</h1>
       </div>
-      <div class="admin-grid">
-        <div class="admin-stat">
-          <div class="admin-val" id="admUsers">1</div>
-          <div class="admin-sub">Активных сессий</div>
+      <span class="badge-plan" id="planBadge" onclick="handleHeaderBadge()">● Базовый</span>
+    </div>
+
+    <!-- ВАЛЮТЫ -->
+    <div class="currency-pill-container">
+      <button class="currency-pill active" onclick="switchCurrency('RUB', this)">₽ RUB</button>
+      <button class="currency-pill" onclick="switchCurrency('USD', this)">$ USD</button>
+      <button class="currency-pill" onclick="switchCurrency('AED', this)">AED</button>
+      <button class="currency-pill" onclick="switchCurrency('CNY', this)">¥ CNY</button>
+    </div>
+    <div class="currency-rate-sub" id="currencyRateSub">1 RUB = 1.00 ₽</div>
+
+
+    <!-- ============================================================== -->
+    <!-- 1. ОБЗОР -->
+    <!-- ============================================================== -->
+    <div id="view-overview" class="view-content active">
+      
+      <!-- СЕКРЕТНАЯ ПАНЕЛЬ АДМИНА -->
+      <div class="admin-panel" id="adminPanel">
+        <div style="font-size: 14px; font-weight: 700; color: #38bdf8;">👑 Панель разработчика</div>
+        <div class="admin-stat-row">
+          <span style="color: var(--text-muted);">Всего пользователей:</span>
+          <span style="font-weight: 700;">1,245</span>
         </div>
-        <div class="admin-stat">
-          <div class="admin-val" id="admLite">0</div>
-          <div class="admin-sub">Подписок Lite</div>
+        <div class="admin-stat-row">
+          <span style="color: var(--text-muted);">Активных Lite:</span>
+          <span style="font-weight: 700; color: #34d399;">312</span>
+        </div>
+      </div>
+
+      <!-- БАЛАНС -->
+      <div class="glass-card">
+        <div class="balance-label">Свободный остаток</div>
+        <div class="balance-val" id="balanceDisplay">₽ 0.00</div>
+        <div class="quick-actions">
+          <button class="btn-action btn-income" onclick="openTxModal('income')">+ Доход</button>
+          <button class="btn-action btn-expense" onclick="openTxModal('expense')">− Расход</button>
+        </div>
+      </div>
+
+      <!-- ЗАКАТ -->
+      <div class="zakat-card" onclick="alert('Нисаб — это минимальный размер состояния, с которого необходимо выплачивать закят 2.5%.')">
+        <div>
+          <div class="zakat-title">✨ Закат к выплате (2.5%)</div>
+          <div class="zakat-sub" id="zakatStatusLabel" style="font-size: 11px; color: var(--text-muted);">Баланс ниже нисаба</div>
+        </div>
+        <div class="zakat-sum" id="zakatDisplay">₽ 0.00</div>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top: 8px;">
+        <h3 style="font-size: 15px; color: var(--text-muted); font-weight: 600;">Недавние движения</h3>
+      </div>
+      <div class="glass-card" style="padding: 10px 18px;" id="txListContainer">
+        <div class="empty-state">Нет записанных операций</div>
+      </div>
+    </div>
+
+
+    <!-- ============================================================== -->
+    <!-- 2. АНАЛИТИКА -->
+    <!-- ============================================================== -->
+    <div id="view-analytics" class="view-content">
+      <div class="glass-card" style="padding: 16px 20px;">
+        <div class="balance-label">Финансовый поток (Месяц)</div>
+        <div style="display:flex; justify-content:space-between; margin-top:10px;">
+          <div>
+            <div style="font-size:11px; color:var(--text-muted);">Доходы</div>
+            <div style="font-size:16px; font-weight:700; color:#34d399;" id="anIncome">₽ 0.00</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:11px; color:var(--text-muted);">Расходы</div>
+            <div style="font-size:16px; font-weight:700; color:#fb7185;" id="anExpense">₽ 0.00</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- СТРУКТУРА / ИСТОЧНИКИ -->
+      <div class="glass-card">
+        <div class="analytics-toggle">
+          <button class="analytics-toggle-btn active" id="btn-an-expense" onclick="switchAnalyticsTab('expense')">Структура расходов</button>
+          <button class="analytics-toggle-btn" id="btn-an-income" onclick="switchAnalyticsTab('income')">Источники доходов</button>
+        </div>
+
+        <div id="an-expense-breakdown">
+          <div class="empty-state">Добавьте расход для анализа</div>
+        </div>
+        <div id="an-income-breakdown" style="display: none;">
+          <div class="empty-state">Добавьте доход для анализа</div>
+        </div>
+      </div>
+
+      <!-- ПРО АНАЛИТИКА (В самом низу) -->
+      <div class="pro-locked-container" id="proAnalyticsSection">
+        <div class="lock-overlay" id="proAnalyticsLock">
+          <div style="font-size: 26px; margin-bottom: 4px;">🔒</div>
+          <div style="font-size: 15px; font-weight: 700; color: #34d399;">Pro-Аналитика Lite</div>
+          <div style="font-size: 11.5px; color: var(--text-muted); margin: 6px 16px 0; line-height: 1.4; text-align:center;">Траектория капитала и расчет подушки (Runway).</div>
+          <button class="btn-unlock" onclick="switchTab('plans')">Разблокировать в Lite</button>
+        </div>
+
+        <div id="proAnalyticsContent" class="locked-blur">
+          <div class="glass-card" style="margin-bottom:14px; padding:16px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size: 11px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Прогноз капитала (6 мес)</span>
+              <span style="font-size: 10px; color:#38bdf8; border:1px solid rgba(56,189,248,0.3); padding:2px 6px; border-radius:6px;">С учетом стратегии</span>
+            </div>
+            <div style="font-size: 22px; font-weight: 800; color:#34d399; margin-top:4px;" id="forecastCapital">₽ 0.00</div>
+            
+            <div style="width:100%; height:100px; margin-top:10px;">
+              <svg viewBox="0 0 320 100" style="width:100%; height:100%; overflow:visible;">
+                <defs>
+                  <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#10b981" stop-opacity="0.35"/>
+                    <stop offset="100%" stop-color="#10b981" stop-opacity="0.0"/>
+                  </linearGradient>
+                </defs>
+                <path d="M 10,80 Q 80,72 160,50 T 310,20 L 310,95 L 10,95 Z" fill="url(#chartGradient)"/>
+                <path d="M 10,80 Q 80,72 160,50 T 310,20" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round"/>
+                <circle cx="10" cy="80" r="4" fill="#10b981"/>
+                <circle cx="310" cy="20" r="5" fill="#fbbf24" stroke="#fff" stroke-width="1.5"/>
+              </svg>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+            <div class="glass-card" style="padding:14px;">
+              <div style="font-size:11px; color:var(--text-muted);">Подушка (Runway)</div>
+              <div style="font-size:18px; font-weight:800; color:#38bdf8; margin:4px 0;" id="runwayVal">0.0 мес.</div>
+              <div style="font-size:10.5px; color:var(--text-muted);">Срок жизни без доходов</div>
+            </div>
+            <div class="glass-card" style="padding:14px;">
+              <div style="font-size:11px; color:var(--text-muted);">Утечки бюджета</div>
+              <div style="font-size:18px; font-weight:800; color:#fb7185; margin:4px 0;">0 ₽/мес</div>
+              <div style="font-size:10.5px; color:var(--text-muted);">Импульсивные траты</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Валюты -->
-    <div class="cur-selector">
-      <div class="cur-btn active">₽ RUB</div>
-      <div class="cur-btn">$ USD</div>
-      <div class="cur-btn">AED</div>
-      <div class="cur-btn">¥ CNY</div>
-    </div>
 
-    <!-- Баланс Карточка -->
-    <div class="wallet-card">
-      <div class="wallet-label">Свободный баланс</div>
-      <div class="wallet-val" id="lblMainBalance">0,00 ₽</div>
-      <div class="btn-row">
-        <button class="btn btn-inc" onclick="showModal('incModal')">+ Доход</button>
-        <button class="btn btn-exp" onclick="showModal('expModal')">- Расход</button>
+    <!-- ============================================================== -->
+    <!-- 3. ЦЕЛИ И ДОЛГИ -->
+    <!-- ============================================================== -->
+    <div id="view-debts" class="view-content">
+      
+      <!-- ФОНД СОВЕТНИКА СТРОГО НАВЕРХУ -->
+      <div class="advisor-fund-box" id="advisorFundBlock" style="display:none;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div style="font-size:12px; font-weight:700; color:#34d399;">💰 Свободный фонд советника</div>
+          <button style="background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:#fff; font-size:11px; padding:4px 10px; border-radius:10px; cursor:pointer;" onclick="openTransferFundModal()">Перевести →</button>
+        </div>
+        <div class="advisor-fund-val" id="fundDisplay">₽ 0.00</div>
+        <div style="font-size:11px; color:var(--text-muted); line-height:1.4;">Здесь хранятся средства, сбереженные алгоритмом Lite.</div>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
+        <h3 style="font-size: 15px; color: var(--text-muted); font-weight: 600;">Финансовые цели и копилки</h3>
+        <button class="btn-add-inline" onclick="openModal('goalModal')">+ Новая цель</button>
+      </div>
+      <div id="goalsListContainer">
+        <div class="empty-state">У вас пока нет целей</div>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px;">
+        <h3 style="font-size: 15px; color: var(--text-muted); font-weight: 600;">Кард аль-Хасан (Долги)</h3>
+        <button class="btn-add-inline" onclick="openModal('debtModal')">+ Добавить долг</button>
+      </div>
+      <div id="debtsListContainer">
+        <div class="empty-state">Долгов нет</div>
       </div>
     </div>
 
-    <div class="sec-head">
-      <div class="sec-title">Недавние операции</div>
-      <div style="font-size: 13px; color: var(--text-muted);" id="lblTxCount">0 записей</div>
-    </div>
-    <div class="list-box" id="txHistoryBox">
-      <div style="text-align: center; color: var(--text-muted); padding: 24px;">История пуста</div>
-    </div>
-  </main>
 
-  <!-- 2. Вкладка "Аналитика" -->
-  <main id="tab-analytics" class="container tab-pane">
-    <div class="sec-head" style="margin-top:0">
-      <div class="sec-title">Аналитика</div>
-    </div>
-
-    <!-- Переключатель категорий: Структура расходов / Источники доходов -->
-    <div class="analytics-toggle-wrap">
-      <div class="analytics-toggle active" id="btnToggleExp" onclick="toggleAnalyticsView('expense')">Структура расходов</div>
-      <div class="analytics-toggle" id="btnToggleInc" onclick="toggleAnalyticsView('income')">Источники доходов</div>
-    </div>
-
-    <!-- Список категорий с суммами и процентами -->
-    <div class="breakdown-card" id="categoriesContainer">
-      <!-- Наполняется динамически -->
-    </div>
-
-    <!-- График и Runway -->
-    <div class="pro-chart-box">
-      <div class="pro-lock-blur" id="chartLock">
-        <div style="font-size:24px; margin-bottom:6px;">🔒</div>
-        <div style="font-size:14px; font-weight:600;">Доступно в Hisab Lite</div>
+    <!-- ============================================================== -->
+    <!-- 4. ТАРИФЫ (Продажа) -->
+    <!-- ============================================================== -->
+    <div id="view-plans" class="view-content">
+      <div class="glass-card" style="border-color:rgba(16,185,129,0.3); background:linear-gradient(145deg, rgba(16,185,129,0.1), rgba(255,255,255,0.02)); margin-bottom: 8px;">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;">
+          <h3 style="font-size:18px; font-weight:800;">Тариф Hisab Lite</h3>
+          <span style="font-size:24px; font-weight:900; color:#34d399;">179 ₽ <span style="font-size:12px; color:var(--text-muted); font-weight:500;">/ мес</span></span>
+        </div>
+        <p style="font-size:12.5px; color:var(--text-muted); margin:8px 0 14px; line-height:1.4;">
+          Включает умный алгоритм сбережений, который сам рассчитывает процент отчислений, графики капитала и подушку Runway.
+        </p>
+        <button class="btn-submit-full" id="btnBuyLite" onclick="togglePlan()">Подключить за 179 ₽</button>
       </div>
-      <div style="display:flex; justify-content:space-between; margin-bottom: 12px;">
-        <span style="font-size:13px; font-weight:600; color:var(--text-muted);">Динамика капитала</span>
-        <span style="font-size:13px; color:var(--accent); font-weight:700;">+0.0%</span>
+
+      <div style="text-align:center; margin-top: 16px; margin-bottom: 8px;">
+        <h2 style="font-size:18px; font-weight:800;">Фундамент вашего капитала</h2>
+        <p style="font-size:12px; color:var(--text-muted); line-height:1.4; margin-top:4px;">Hisab Lite объединяет вековые принципы Ислама и золотые правила финансовой грамотности.</p>
       </div>
-      <svg width="100%" height="110" viewBox="0 0 300 110">
-        <defs>
-          <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="rgba(0, 210, 133, 0.35)"/>
-            <stop offset="100%" stop-color="rgba(0, 210, 133, 0)"/>
-          </linearGradient>
-        </defs>
-        <path d="M0 90 C 70 85, 140 70, 210 50 C 250 40, 280 20, 300 15 L 300 110 L 0 110 Z" fill="url(#chartGrad)"/>
-        <path d="M0 90 C 70 85, 140 70, 210 50 C 250 40, 280 20, 300 15" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"/>
-      </svg>
-      <div style="margin-top:10px; font-size:13px; display:flex; justify-content:space-between;">
-        <span>Подушка безопасности (Runway):</span>
-        <strong id="lblRunway">0 мес</strong>
+      <div class="glass-card" style="padding:14px; margin-bottom:10px; background:rgba(16,185,129,0.05); border-color:rgba(16,185,129,0.2);">
+        <div style="font-size:12px; font-weight:700; color:#34d399; margin-bottom:4px;">⚖️ Шариат и умеренность</div>
+        <div style="font-size:12.5px; color:#e5e7eb; line-height:1.4;">«Не будь слишком скуп и не расточительствуй» (Коран 17:29). Советник рассчитывает идеальный баланс сбережений.</div>
+      </div>
+      <div class="glass-card" style="padding:14px; margin-bottom:10px; background:rgba(56,189,248,0.05); border-color:rgba(56,189,248,0.2);">
+        <div style="font-size:12px; font-weight:700; color:#38bdf8; margin-bottom:4px;">📖 Дж. Клейсон (Вавилон)</div>
+        <div style="font-size:12.5px; color:#e5e7eb; line-height:1.4;">«Сначала заплати себе». Алгоритм формирует резерв до того, как деньги разойдутся на нужды.</div>
       </div>
     </div>
-  </main>
 
-  <!-- 3. Вкладка "Цели и Долги" -->
-  <main id="tab-debts" class="container tab-pane">
-    <!-- Свободный фонд советника (на самом верху) -->
-    <div class="advisor-fund" id="advisorFundBox">
-      <div class="advisor-top">
-        <div class="advisor-tag">💰 Свободный фонд советника</div>
-        <button class="btn-tf" onclick="showModal('transferModal')">Перевести →</button>
+    <!-- ============================================================== -->
+    <!-- 5. ВЫБОР СТРАТЕГИИ ОТКЛАДЫВАНИЯ (LITE ADVISOR) -->
+    <!-- ============================================================== -->
+    <div id="view-lite-strategy" class="view-content">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 4px;">
+        <h2 style="font-size:18px; font-weight:700;">Настройка алгоритма</h2>
+        <span style="font-size:11px; background:rgba(16,185,129,0.2); color:#34d399; padding:3px 8px; border-radius:8px;">Lite</span>
       </div>
-      <div class="advisor-val" id="lblAdvisorFund">0,00 ₽</div>
-      <div class="advisor-txt">Сбережения, удержанные алгоритмом Lite при поступлениях. Распределите их в копилку или на закрытие долга.</div>
-    </div>
+      <p style="font-size:12.5px; color:var(--text-muted); line-height:1.4; margin-bottom: 12px;">
+        Выберите метод, по которому Hisab будет автоматически переводить часть ваших новых доходов в Свободный фонд советника.
+      </p>
 
-    <!-- Цели -->
-    <div class="sec-head" style="margin-top:0">
-      <div class="sec-title">Финансовые цели</div>
-      <div class="sec-link" onclick="showModal('goalModal')">+ Новая цель</div>
-    </div>
-    <div class="list-box" id="goalsContainer">
-      <div style="text-align:center; color: var(--text-muted); padding: 14px;">Нет активных целей</div>
-    </div>
+      <!-- Стратегии -->
+      <div class="strategy-card selected" id="strat-18" onclick="selectStrategy(18, this)">
+        <div class="strategy-header">
+          <span class="strategy-title">Баффет & Уоррен (50/30/20)</span>
+          <span class="strategy-percent">18%</span>
+        </div>
+        <div class="strategy-desc">Золотой стандарт инвесторов. Сбалансированный рост капитала без жесткой экономии.</div>
+      </div>
 
-    <!-- Долги -->
-    <div class="sec-head">
-      <div class="sec-title">Кард аль-Хасан (Долги)</div>
-      <div class="sec-link" onclick="showModal('debtModal')">+ Добавить долг</div>
-    </div>
-    <div class="list-box" id="debtsContainer">
-      <div style="text-align:center; color: var(--text-muted); padding: 14px;">Долгов нет</div>
-    </div>
-  </main>
+      <div class="strategy-card" id="strat-10" onclick="selectStrategy(10, this)">
+        <div class="strategy-header">
+          <span class="strategy-title">Вавилон / Дж. Клейсон</span>
+          <span class="strategy-percent">10%</span>
+        </div>
+        <div class="strategy-desc">Мягкий старт. «Сначала заплати себе минимум десятую часть».</div>
+      </div>
 
-  <!-- 4. Вкладка "Тарифы" -->
-  <main id="tab-plans" class="container tab-pane">
-    <!-- Блок покупки подписки -->
-    <div class="sub-card" id="boxBuySub">
-      <div style="font-size:22px; font-weight:700;">✨ Hisab Lite</div>
-      <div style="color:var(--text-muted); font-size:13px; margin-top:4px;">ИИ-советник, персональные формулы сбережений и аналитика капитала.</div>
-      <div class="sub-price">179 ₽ <span style="font-size:15px; color:var(--text-muted); font-weight:500;">/ месяц</span></div>
-      <button class="btn btn-act" style="width:100%;" onclick="activateLiteSub()">Подключить за 179 ₽</button>
-    </div>
+      <div class="strategy-card" id="strat-25" onclick="selectStrategy(25, this)">
+        <div class="strategy-header">
+          <span class="strategy-title">Снежный ком / Д. Рамзи</span>
+          <span class="strategy-percent">25%</span>
+        </div>
+        <div class="strategy-desc">Агрессивное откладывание для максимально быстрого закрытия долгов.</div>
+      </div>
 
-    <!-- Блок выбора стратегии (если подписка включена) -->
-    <div id="boxStrategies" style="display:none; margin-bottom: 24px;">
-      <div class="sec-head" style="margin-top:0">
-        <div class="sec-title">Метод авто-откладывания</div>
+      <div class="strategy-card" id="strat-15" onclick="selectStrategy(15, this)">
+        <div class="strategy-header">
+          <span class="strategy-title">Исламская умеренность</span>
+          <span class="strategy-percent">15%</span>
+        </div>
+        <div class="strategy-desc">Баланс между личным капиталом, регулярным садака и подготовкой к закяту.</div>
       </div>
-      <div class="strat-item selected" onclick="pickStrategy(18, this)">
-        <div style="font-weight:700; margin-bottom:3px;">Формула Баффета (18%)</div>
-        <div style="font-size:12px; color:var(--text-muted);">«Тратьте только то, что осталось после сбережений». Золотой стандарт баланса.</div>
-      </div>
-      <div class="strat-item" onclick="pickStrategy(10, this)">
-        <div style="font-weight:700; margin-bottom:3px;">Правило Клейсона (10%)</div>
-        <div style="font-size:12px; color:var(--text-muted);">«Заплати сначала себе». Классический метод без стресса для бюджета.</div>
-      </div>
-      <div class="strat-item" onclick="pickStrategy(25, this)">
-        <div style="font-weight:700; margin-bottom:3px;">Метод Дэйва Рамзи (25%)</div>
-        <div style="font-size:12px; color:var(--text-muted);">Ускоренное накопление. Быстрое формирование подушки безопасности.</div>
-      </div>
-      <button class="btn" style="width:100%; margin-top:12px; background: transparent; color: var(--danger); border: 1px solid var(--danger);" onclick="cancelLiteSub()">Отключить Lite</button>
+
+      <button class="btn-submit-full" onclick="saveStrategy()">Сохранить и продолжить</button>
     </div>
 
-    <!-- Фундамент капитала (Мудрость) -->
-    <div class="sec-head">
-      <div class="sec-title">Фундамент вашего капитала</div>
-    </div>
-    <div style="background: var(--card-bg); border-radius: 16px; padding: 16px; margin-bottom: 12px; border-left: 4px solid var(--accent);">
-      <div style="font-weight:700; font-size:14px; margin-bottom:4px;">⚖️ Шариат и умеренность</div>
-      <div style="font-size:13px; color:var(--text-muted); line-height:1.45;">«Не делай свою руку привязанной к шее (не скупись) и не раскрывай её во всю ширину (не расточительствуй)» (Коран 17:29).</div>
-    </div>
-    <div style="background: var(--card-bg); border-radius: 16px; padding: 16px; border-left: 4px solid var(--primary);">
-      <div style="font-weight:700; font-size:14px; margin-bottom:4px;">💡 Правило дисциплины</div>
-      <div style="font-size:13px; color:var(--text-muted); line-height:1.45;">«Бедность — это не отсутствие больших доходов, а неумение контролировать мелкие траты».</div>
-    </div>
-  </main>
+  </div>
 
-  <!-- Модальные окна -->
-  <div class="modal-overlay" id="overlay" onclick="onOverlayClick(event)">
-    <!-- Расход -->
-    <div class="modal-sheet" id="expModal">
-      <div class="modal-head">
-        <div class="sec-title">Новый расход</div>
-        <button class="modal-close" onclick="hideModals()">×</button>
-      </div>
-      <input type="number" id="inpExpAmount" class="input-box" placeholder="Сумма (₽)" inputmode="decimal">
-      <div class="chips-slider" id="chipsExp">
-        <div class="chip-item active" onclick="setChip('exp', 'Супермаркеты и продукты', this)">🛒 Продукты</div>
-        <div class="chip-item" onclick="setChip('exp', 'Заправка и транспорт', this)">🚗 Транспорт</div>
-        <div class="chip-item" onclick="setChip('exp', 'Дом, семья и счета', this)">🏠 Дом/Счета</div>
-        <div class="chip-item" onclick="setChip('exp', 'Кафе и перекусы', this)">☕ Кафе</div>
-        <div class="chip-item" onclick="setChip('exp', 'Садака и помощь', this)">🤲 Садака</div>
-      </div>
-      <input type="text" id="inpExpNote" class="input-box" placeholder="Заметка (необязательно)">
-      <button class="btn btn-exp" style="width:100%; background:var(--danger); color:#fff;" onclick="saveTx('expense')">Сохранить</button>
-    </div>
+  <!-- НИЖНЯЯ НАВИГАЦИЯ -->
+  <div class="bottom-nav">
+    <button class="nav-tab active" id="tab-overview" onclick="switchTab('overview', this)">
+      <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+      <span>Обзор</span>
+    </button>
+    <button class="nav-tab" id="tab-analytics" onclick="switchTab('analytics', this)">
+      <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+      <span>Аналитика</span>
+    </button>
+    <button class="nav-tab" id="tab-debts" onclick="switchTab('debts', this)">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+      <span>Цели/Долги</span>
+    </button>
+    <button class="nav-tab" id="tab-plans" onclick="switchTab('plans', this)">
+      <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+      <span>Тарифы</span>
+    </button>
+  </div>
 
-    <!-- Доход -->
-    <div class="modal-sheet" id="incModal">
-      <div class="modal-head">
-        <div class="sec-title">Новый доход</div>
-        <button class="modal-close" onclick="hideModals()">×</button>
-      </div>
-      <input type="number" id="inpIncAmount" class="input-box" placeholder="Сумма (₽)" inputmode="decimal">
-      <div class="chips-slider" id="chipsInc">
-        <div class="chip-item active" onclick="setChip('inc', 'Основная зарплата', this)">💼 Зарплата</div>
-        <div class="chip-item" onclick="setChip('inc', 'Переводы и долги', this)">💳 Перевод</div>
-        <div class="chip-item" onclick="setChip('inc', 'Бизнес и проекты', this)">📈 Бизнес</div>
-        <div class="chip-item" onclick="setChip('inc', 'Прочие поступления', this)">🎁 Прочее</div>
-      </div>
-      <input type="text" id="inpIncNote" class="input-box" placeholder="Заметка (необязательно)">
-      <button class="btn btn-inc" style="width:100%; background:var(--accent); color:#fff;" onclick="saveTx('income')">Сохранить</button>
-    </div>
+  <!-- МОДАЛКА: ТРАНЗАКЦИИ С ВЫБОРОМ КАТЕГОРИИ -->
+  <div class="modal-overlay" id="txModal" onclick="closeModal(event, 'txModal')">
+    <div class="modal-sheet">
+      <div class="modal-title"><span id="txHeading">Новая операция</span><button class="btn-close" onclick="forceClose('txModal')">✕</button></div>
+      <input type="number" id="txAmount" class="form-input" placeholder="Сумма (₽)" style="margin-bottom:6px;">
+      
+      <!-- ЧИПСЫ КАТЕГОРИЙ -->
+      <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 2px;">Категория:</div>
+      <div id="categoryChipsContainer" class="category-chips-grid"></div>
 
-    <!-- Перевод из Фонда -->
-    <div class="modal-sheet" id="transferModal">
-      <div class="modal-head">
-        <div class="sec-title">Перевод из Фонда</div>
-        <button class="modal-close" onclick="hideModals()">×</button>
-      </div>
-      <p style="font-size:13px; color:var(--text-muted); margin-bottom:12px;">Выберите цель или долг, куда направить сбережённые средства:</p>
-      <select id="selTransferTarget" class="input-box"></select>
-      <input type="number" id="inpTransferAmount" class="input-box" placeholder="Сумма (₽)" inputmode="decimal">
-      <button class="btn btn-act" style="width:100%;" onclick="executeFundTransfer()">Подтвердить перевод</button>
+      <input type="text" id="txDesc" class="form-input" placeholder="Комментарий (необязательно)" style="margin-top:4px;">
+      <button class="btn-submit-full" id="txBtn" onclick="submitTx()">Сохранить</button>
     </div>
+  </div>
 
-    <!-- Новая цель -->
-    <div class="modal-sheet" id="goalModal">
-      <div class="modal-head">
-        <div class="sec-title">Новая цель</div>
-        <button class="modal-close" onclick="hideModals()">×</button>
-      </div>
-      <input type="text" id="inpGoalName" class="input-box" placeholder="Название цели (например, Хадж)">
-      <input type="number" id="inpGoalTarget" class="input-box" placeholder="Целевая сумма (₽)" inputmode="decimal">
-      <button class="btn btn-act" style="width:100%;" onclick="createGoal()">Создать</button>
+  <!-- МОДАЛКА: НОВАЯ ЦЕЛЬ -->
+  <div class="modal-overlay" id="goalModal" onclick="closeModal(event, 'goalModal')">
+    <div class="modal-sheet">
+      <div class="modal-title"><span>Новая цель</span><button class="btn-close" onclick="forceClose('goalModal')">✕</button></div>
+      <input type="text" id="goalTitle" class="form-input" placeholder="Название (Хадж, Авто)">
+      <input type="number" id="goalTarget" class="form-input" placeholder="Целевая сумма (₽)">
+      <button class="btn-submit-full" onclick="submitGoal()">Создать цель</button>
     </div>
+  </div>
 
-    <!-- Новый долг -->
-    <div class="modal-sheet" id="debtModal">
-      <div class="modal-head">
-        <div class="sec-title">Добавить долг</div>
-        <button class="modal-close" onclick="hideModals()">×</button>
-      </div>
-      <input type="text" id="inpDebtName" class="input-box" placeholder="Кому вернуть? (Имя)">
-      <input type="number" id="inpDebtAmount" class="input-box" placeholder="Сумма долга (₽)" inputmode="decimal">
-      <button class="btn btn-act" style="width:100%;" onclick="createDebt()">Зафиксировать</button>
+  <!-- МОДАЛКА: ПОПОЛНИТЬ ЦЕЛЬ -->
+  <div class="modal-overlay" id="depositModal" onclick="closeModal(event, 'depositModal')">
+    <div class="modal-sheet">
+      <div class="modal-title"><span id="depTitle">Пополнить</span><button class="btn-close" onclick="forceClose('depositModal')">✕</button></div>
+      <input type="number" id="depAmount" class="form-input" placeholder="Сумма (₽)">
+      <button class="btn-submit-full" onclick="submitDeposit()">Пополнить</button>
     </div>
-  </main>
+  </div>
 
-  <!-- Bottom Bar Navigation -->
-  <nav class="nav-bar">
-    <div class="nav-inner">
-      <button class="nav-item active" id="nav-overview" onclick="switchNav('overview')">
-        <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-        Обзор
-      </button>
-      <button class="nav-item" id="nav-analytics" onclick="switchNav('analytics')">
-        <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-        Аналитика
-      </button>
-      <button class="nav-item" id="nav-debts" onclick="switchNav('debts')">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-        Цели/Долги
-      </button>
-      <button class="nav-item" id="nav-plans" onclick="switchNav('plans')">
-        <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 6.86 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-        Тарифы
-      </button>
+  <!-- МОДАЛКА: НОВЫЙ ДОЛГ -->
+  <div class="modal-overlay" id="debtModal" onclick="closeModal(event, 'debtModal')">
+    <div class="modal-sheet">
+      <div class="modal-title"><span>Добавить долг</span><button class="btn-close" onclick="forceClose('debtModal')">✕</button></div>
+      <select id="debtType" class="form-input" style="appearance:none; background:#1e2333;">
+        <option value="borrowed">Я взял в долг</option>
+        <option value="lent">Я дал в долг</option>
+      </select>
+      <input type="text" id="debtName" class="form-input" placeholder="Имя человека">
+      <input type="number" id="debtAmount" class="form-input" placeholder="Сумма (₽)">
+      <button class="btn-submit-full" onclick="submitDebt()">Зафиксировать</button>
     </div>
-  </nav>
+  </div>
+
+  <!-- МОДАЛКА: ПЕРЕВОД ИЗ ФОНДА СОВЕТНИКА -->
+  <div class="modal-overlay" id="transferFundModal" onclick="closeModal(event, 'transferFundModal')">
+    <div class="modal-sheet">
+      <div class="modal-title"><span>Перевод из фонда</span><button class="btn-close" onclick="forceClose('transferFundModal')">✕</button></div>
+      <div style="font-size:13px; color:var(--text-muted); margin-bottom: 12px;">Доступно: <span id="transferFundAvailable" style="color:#34d399; font-weight:bold;">0 ₽</span></div>
+      <select id="transferFundTarget" class="form-input" style="appearance:none; background:#1e2333; margin-bottom: 10px;">
+        <option value="">Выберите цель или долг...</option>
+      </select>
+      <input type="number" id="transferFundAmount" class="form-input" placeholder="Сумма (₽)">
+      <button class="btn-submit-full" onclick="submitTransferFund()">Перевести</button>
+    </div>
+  </div>
 
   <script>
-    // === КОНФИГУРАЦИЯ БАЗЫ ДАННЫХ ===
-    const SUPABASE_BASE_URL = "https://hyzrfkvxbkjcfcbwhiwd.supabase.co/rest/v1";
-    const SUPABASE_KEY = "sb_publishable_Ax-wJ4xpn72d7YESzDIAWQ_07xPF4tA";
+    // ==========================================
+    // ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
+    // ==========================================
+    var baseBalanceRub = 0;
+    var advisorFundRub = 0;
+    var transactions = [];
+    var goals = [];
+    var debts = [];
+    
+    var currentCurrency = 'RUB';
+    var currentPlan = 'free';
+    var liteStrategyPercent = 18;
+    
+    var currentTxType = 'income';
+    var activeGoalId = null;
+    var selectedCategory = null;
 
+    // ==========================================
+    // СИСТЕМА ВЕЧНОГО СОХРАНЕНИЯ (LOCAL + TELEGRAM CLOUD)
+    // ==========================================
+    const STORAGE_KEY = 'hisab_finance_state_v1';
     const tg = window.Telegram?.WebApp;
-    if (tg) {
-      tg.ready();
-      tg.expand();
+
+    function getSaveState() {
+      return JSON.stringify({
+        baseBalanceRub: window.baseBalanceRub,
+        advisorFundRub: window.advisorFundRub,
+        transactions: window.transactions,
+        goals: window.goals,
+        debts: window.debts,
+        currentPlan: window.currentPlan,
+        liteStrategyPercent: window.liteStrategyPercent
+      });
     }
 
-    const ADMIN_TELEGRAM_ID = "8774039431";
-    const currentUserId = tg?.initDataUnsafe?.user?.id ? String(tg.initDataUnsafe.user.id) : ADMIN_TELEGRAM_ID;
+    function applySaveState(dataStr) {
+      if (!dataStr) return;
+      try {
+        const data = JSON.parse(dataStr);
+        window.baseBalanceRub = data.baseBalanceRub || 0;
+        window.advisorFundRub = data.advisorFundRub || 0;
+        window.transactions = data.transactions || [];
+        window.goals = data.goals || [];
+        window.debts = data.debts || [];
+        window.currentPlan = data.currentPlan || 'free';
+        window.liteStrategyPercent = data.liteStrategyPercent || 18;
+      } catch(e) {
+        console.error("Ошибка при чтении данных:", e);
+      }
+    }
 
-    // Исходное состояние приложения (строго с 0)
-    let appState = {
-      balance: 0,
-      advisorFund: 0,
-      isLite: false,
-      strategyPercent: 18,
-      transactions: [],
-      goals: [],
-      debts: []
+    window.saveStateToCloud = function() {
+      const stateStr = getSaveState();
+      
+      // 1. Моментальное сохранение в браузере
+      localStorage.setItem(STORAGE_KEY, stateStr);
+      
+      // 2. Вечное сохранение в аккаунт Telegram (если открыто в ТГ)
+      if (tg && tg.CloudStorage) {
+        tg.CloudStorage.setItem(STORAGE_KEY, stateStr, (err, success) => {
+          if (err) console.error("Ошибка CloudStorage:", err);
+        });
+      }
     };
 
-    let selectedExpChip = 'Супермаркеты и продукты';
-    let selectedIncChip = 'Основная зарплата';
-    let currentAnalyticsType = 'expense';
+    function loadDataAndInit() {
+      // Сначала пытаемся быстро загрузить из кэша
+      const localData = localStorage.getItem(STORAGE_KEY);
+      if (localData) {
+        applySaveState(localData);
+        updateDisplays();
+        applyPlanState();
+      }
 
-    const fmtMoney = (v) => new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', maximumFractionDigits: 2 }).format(v || 0);
-
-    // --- СИНХРОНИЗАЦИЯ ЧЕРЕЗ БЫСТРЫЙ REST API (НЕ ЗАВИСАЕТ) ---
-    async function fetchFromCloud() {
-      // 1. Быстро загружаем из кэша
-      try {
-        const local = localStorage.getItem('hisab_backup_' + currentUserId);
-        if (local) {
-          appState = JSON.parse(local);
-          renderAll();
-        }
-      } catch (e) {}
-
-      // 2. Делаем запрос к Supabase без тяжёлых библиотек
-      try {
-        const response = await fetch(`${SUPABASE_BASE_URL}/user_profiles?telegram_id=eq.${currentUserId}&select=data`, {
-          headers: {
-            "apikey": SUPABASE_KEY,
-            "Authorization": `Bearer ${SUPABASE_KEY}`
+      // Затем подтягиваем самую свежую версию из облака Telegram
+      if (tg && tg.CloudStorage) {
+        tg.CloudStorage.getItem(STORAGE_KEY, (err, cloudData) => {
+          if (!err && cloudData) {
+            applySaveState(cloudData);
+            localStorage.setItem(STORAGE_KEY, cloudData); // синхронизируем
+            updateDisplays();
+            applyPlanState();
           }
         });
-
-        if (response.ok) {
-          const rows = await response.json();
-          if (rows && rows.length > 0 && rows[0].data) {
-            appState = { ...appState, ...rows[0].data };
-          }
-        }
-      } catch (err) {
-        console.warn("Supabase недоступен, работаем через локальный кэш:", err);
-      } finally {
-        renderAll();
       }
     }
 
-    let saveTimer = null;
-    function persistData() {
-      renderAll();
-      // Локальный мгновенный сейв
+    // Регистрация глобальных функций
+    window.updateDisplays = updateDisplays;
+    window.applyPlanState = applyPlanState;
+
+    const INCOME_CATEGORIES = [
+      { id: 'salary', name: 'Зарплата', icon: '🏢' },
+      { id: 'freelance', name: 'Фриланс', icon: '💼' },
+      { id: 'business', name: 'Бизнес', icon: '📈' },
+      { id: 'gift', name: 'Подарок', icon: '🎁' },
+      { id: 'investment', name: 'Инвестиции', icon: '🤝' },
+      { id: 'other', name: 'Прочее', icon: '💰' }
+    ];
+
+    const EXPENSE_CATEGORIES = [
+      { id: 'supermarket', name: 'Продукты', icon: '🛒' },
+      { id: 'home', name: 'Дом/Семья', icon: '🏠' },
+      { id: 'transport', name: 'Транспорт', icon: '⛽' },
+      { id: 'cafe', name: 'Кафе', icon: '☕' },
+      { id: 'sadaka', name: 'Садака', icon: '🎁' },
+      { id: 'shopping', name: 'Покупки', icon: '🛍' }
+    ];
+
+    const RATES = { RUB: { rate: 1, symbol: '₽' }, USD: { rate: 92.5, symbol: '$' }, AED: { rate: 25.18, symbol: 'AED ' }, CNY: { rate: 12.8, symbol: '¥ ' } };
+    const MY_ADMIN_TG_ID = 8774039431;
+
+    // Инициализация интерфейса
+    window.addEventListener('DOMContentLoaded', () => {
+      checkAdmin();
+      loadDataAndInit(); // Загружаем данные
+    });
+
+    function checkAdmin() {
       try {
-        localStorage.setItem('hisab_backup_' + currentUserId, JSON.stringify(appState));
-        if (tg?.CloudStorage?.setItem) {
-          tg.CloudStorage.setItem('hisab_data', JSON.stringify(appState), () => {});
-        }
+        const uid = tg?.initDataUnsafe?.user?.id || 0;
+        if (uid === MY_ADMIN_TG_ID) document.getElementById('adminPanel').style.display = 'block';
       } catch (e) {}
-
-      // Отправка в Supabase с задержкой (debounce)
-      clearTimeout(saveTimer);
-      saveTimer = setTimeout(async () => {
-        try {
-          await fetch(`${SUPABASE_BASE_URL}/user_profiles`, {
-            method: "POST",
-            headers: {
-              "apikey": SUPABASE_KEY,
-              "Authorization": `Bearer ${SUPABASE_KEY}`,
-              "Content-Type": "application/json",
-              "Prefer": "resolution=merge-duplicates"
-            },
-            body: JSON.stringify({
-              telegram_id: currentUserId,
-              data: appState,
-              updated_at: new Date().toISOString()
-            })
-          });
-        } catch (err) {
-          console.warn("Не удалось сохранить в облако:", err);
-        }
-      }, 400);
     }
 
-    // --- ОПЕРАЦИИ (ДОХОД / РАСХОД) ---
-    function setChip(type, name, el) {
-      const container = document.getElementById(type === 'exp' ? 'chipsExp' : 'chipsInc');
-      container.querySelectorAll('.chip-item').forEach(c => c.classList.remove('active'));
-      el.classList.add('active');
-      if (type === 'exp') selectedExpChip = name;
-      else selectedIncChip = name;
+    // ==========================================
+    // ОТРИСОВКА И ЛОГИКА
+    // ==========================================
+    function updateDisplays() {
+      const c = RATES[currentCurrency];
+      
+      const convBal = (baseBalanceRub / c.rate).toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      const convZakat = ((baseBalanceRub * 0.025) / c.rate).toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      const convFund = (advisorFundRub / c.rate).toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+      document.getElementById('balanceDisplay').innerText = `${c.symbol} ${convBal}`;
+      document.getElementById('zakatDisplay').innerText = `${c.symbol} ${convZakat}`;
+      document.getElementById('fundDisplay').innerText = `${c.symbol} ${convFund}`;
+      document.getElementById('zakatStatusLabel').innerText = baseBalanceRub >= 450000 ? 'Баланс превысил нисаб' : 'Баланс ниже нисаба';
+
+      // Аналитика
+      let inc = 0, exp = 0;
+      transactions.forEach(t => { if(t.amount > 0) inc += t.amount; else exp += Math.abs(t.amount); });
+      document.getElementById('anIncome').innerText = `${c.symbol} ${(inc/c.rate).toLocaleString('ru-RU', {maximumFractionDigits:0})}`;
+      document.getElementById('anExpense').innerText = `${c.symbol} ${(exp/c.rate).toLocaleString('ru-RU', {maximumFractionDigits:0})}`;
+      
+      const runway = exp > 0 ? (baseBalanceRub / exp).toFixed(1) : '0.0';
+      document.getElementById('runwayVal').innerText = runway + ' мес.';
+      
+      // Прогноз капитала (6 мес)
+      const monthlySavings = (inc * (liteStrategyPercent/100)) || 0;
+      const forecast = baseBalanceRub + (monthlySavings * 6);
+      document.getElementById('forecastCapital').innerText = `${c.symbol} ${(forecast/c.rate).toLocaleString('ru-RU', {maximumFractionDigits:0})}`;
+
+      renderTransactions();
+      renderAnalyticsBreakdown();
+      renderGoals();
+      renderDebts();
     }
 
-    function saveTx(type) {
-      const inpAmt = document.getElementById(type === 'expense' ? 'inpExpAmount' : 'inpIncAmount');
-      const inpNote = document.getElementById(type === 'expense' ? 'inpExpNote' : 'inpIncNote');
-      const amt = parseFloat(inpAmt.value);
+    function renderTransactions() {
+      const cont = document.getElementById('txListContainer');
+      if (transactions.length === 0) { cont.innerHTML = '<div class="empty-state">Нет записанных операций</div>'; return; }
+      cont.innerHTML = '';
+      const c = RATES[currentCurrency];
 
-      if (!amt || amt <= 0) {
-        alert('Пожалуйста, введите корректную сумму');
-        return;
-      }
-
-      const category = type === 'expense' ? selectedExpChip : selectedIncChip;
-      const note = inpNote.value.trim();
-
-      if (type === 'expense') {
-        if (amt > appState.balance) {
-          alert('Недостаточно средств на балансе');
-          return;
-        }
-        appState.balance -= amt;
-      } else {
-        // Доход: если включен Lite, процент уходит в Фонд советника
-        if (appState.isLite) {
-          const cut = (amt * appState.strategyPercent) / 100;
-          appState.advisorFund += cut;
-          appState.balance += (amt - cut);
-        } else {
-          appState.balance += amt;
-        }
-      }
-
-      appState.transactions.unshift({
-        id: Date.now(),
-        type,
-        amount: amt,
-        category,
-        note,
-        date: new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
-      });
-
-      inpAmt.value = '';
-      inpNote.value = '';
-      hideModals();
-      persistData();
-    }
-
-    // --- ЦЕЛИ И ДОЛГИ ---
-    function createGoal() {
-      const name = document.getElementById('inpGoalName').value.trim();
-      const target = parseFloat(document.getElementById('inpGoalTarget').value);
-      if (!name || !target) return;
-
-      appState.goals.push({ id: Date.now(), name, target, current: 0 });
-      document.getElementById('inpGoalName').value = '';
-      document.getElementById('inpGoalTarget').value = '';
-      hideModals();
-      persistData();
-    }
-
-    function createDebt() {
-      const name = document.getElementById('inpDebtName').value.trim();
-      const amount = parseFloat(document.getElementById('inpDebtAmount').value);
-      if (!name || !amount) return;
-
-      appState.debts.push({ id: Date.now(), name, amount, paid: 0 });
-      document.getElementById('inpDebtName').value = '';
-      document.getElementById('inpDebtAmount').value = '';
-      hideModals();
-      persistData();
-    }
-
-    function fillTransferSelect() {
-      const sel = document.getElementById('selTransferTarget');
-      sel.innerHTML = '<option value="">-- Выберите цель или долг --</option>';
-      appState.goals.forEach(g => {
-        sel.innerHTML += `<option value="g_${g.id}">🎯 Цель: ${g.name} (нужно ещё ${fmtMoney(g.target - g.current)})</option>`;
-      });
-      appState.debts.forEach(d => {
-        sel.innerHTML += `<option value="d_${d.id}">🔻 Долг: ${d.name} (остаток ${fmtMoney(d.amount - d.paid)})</option>`;
-      });
-    }
-
-    function executeFundTransfer() {
-      const targetVal = document.getElementById('selTransferTarget').value;
-      const amt = parseFloat(document.getElementById('inpTransferAmount').value);
-
-      if (!targetVal || !amt || amt <= 0) {
-        alert('Укажите цель и сумму');
-        return;
-      }
-      if (amt > appState.advisorFund) {
-        alert('Недостаточно средств в Свободном фонде');
-        return;
-      }
-
-      appState.advisorFund -= amt;
-      const [type, id] = targetVal.split('_');
-
-      if (type === 'g') {
-        const goal = appState.goals.find(x => x.id == id);
-        if (goal) goal.current += amt;
-      } else {
-        const debt = appState.debts.find(x => x.id == id);
-        if (debt) debt.paid += amt;
-      }
-
-      document.getElementById('inpTransferAmount').value = '';
-      hideModals();
-      persistData();
-    }
-
-    // --- ПОДПИСКА И СТРАТЕГИИ ---
-    function activateLiteSub() {
-      appState.isLite = true;
-      persistData();
-      alert('Hisab Lite успешно подключен!');
-    }
-
-    function cancelLiteSub() {
-      appState.isLite = false;
-      persistData();
-    }
-
-    function pickStrategy(pct, el) {
-      document.querySelectorAll('.strat-item').forEach(e => e.classList.remove('selected'));
-      el.classList.add('selected');
-      appState.strategyPercent = pct;
-      persistData();
-    }
-
-    // --- ОТРИСОВКА ИНТЕРФЕЙСА ---
-    function renderAll() {
-      // Админ-панель
-      if (currentUserId === ADMIN_TELEGRAM_ID) {
-        document.getElementById('adminPanel').style.display = 'block';
-        document.getElementById('admLite').innerText = appState.isLite ? "1" : "0";
-      }
-
-      // Главный баланс
-      document.getElementById('lblMainBalance').innerText = fmtMoney(appState.balance);
-
-      // Список операций
-      const txBox = document.getElementById('txHistoryBox');
-      document.getElementById('lblTxCount').innerText = `${appState.transactions.length} записей`;
-      if (appState.transactions.length === 0) {
-        txBox.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 24px;">История пуста</div>`;
-      } else {
-        txBox.innerHTML = appState.transactions.map(t => `
-          <div class="card-item">
-            <div class="card-left">
-              <div class="card-ico">${t.type === 'income' ? '💼' : '🛍️'}</div>
-              <div class="card-meta">
-                <h4>${t.category}</h4>
-                <p>${t.note ? t.note + ' • ' : ''}${t.date}</p>
-              </div>
-            </div>
-            <div class="card-num ${t.type === 'income' ? 'num-plus' : 'num-minus'}">
-              ${t.type === 'income' ? '+' : '-'} ${fmtMoney(t.amount)}
-            </div>
-          </div>
-        `).join('');
-      }
-
-      // Lite статус и Советник
-      if (appState.isLite) {
-        document.getElementById('topLiteBadge').style.display = 'block';
-        document.getElementById('boxBuySub').style.display = 'none';
-        document.getElementById('boxStrategies').style.display = 'block';
-        document.getElementById('advisorFundBox').style.display = 'block';
-        document.getElementById('lblAdvisorFund').innerText = fmtMoney(appState.advisorFund);
-        document.getElementById('chartLock').style.display = 'none';
-      } else {
-        document.getElementById('topLiteBadge').style.display = 'none';
-        document.getElementById('boxBuySub').style.display = 'block';
-        document.getElementById('boxStrategies').style.display = 'none';
-        document.getElementById('advisorFundBox').style.display = 'none';
-        document.getElementById('chartLock').style.display = 'flex';
-      }
-
-      // Отрисовка аналитики категорий
-      renderAnalyticsView();
-
-      // Отрисовка целей
-      const gBox = document.getElementById('goalsContainer');
-      if (appState.goals.length === 0) {
-        gBox.innerHTML = `<div style="text-align:center; color: var(--text-muted); padding: 14px;">Нет активных целей</div>`;
-      } else {
-        gBox.innerHTML = appState.goals.map(g => {
-          const pct = Math.min(100, Math.round((g.current / g.target) * 100));
-          return `
-            <div class="card-item" style="flex-direction: column; align-items: stretch; gap: 8px;">
-              <div style="display:flex; justify-content:space-between; font-size:14px; font-weight:600;">
-                <span>🎯 ${g.name}</span>
-                <span>${fmtMoney(g.current)} / ${fmtMoney(g.target)}</span>
-              </div>
-              <div class="cat-track"><div class="cat-fill" style="width:${pct}%; background:var(--accent);"></div></div>
-            </div>
-          `;
-        }).join('');
-      }
-
-      // Отрисовка долгов
-      const dBox = document.getElementById('debtsContainer');
-      if (appState.debts.length === 0) {
-        dBox.innerHTML = `<div style="text-align:center; color: var(--text-muted); padding: 14px;">Долгов нет</div>`;
-      } else {
-        dBox.innerHTML = appState.debts.map(d => `
-          <div class="card-item">
-            <div class="card-left">
-              <div class="card-ico">🔻</div>
-              <div class="card-meta">
-                <h4>${d.name}</h4>
-                <p>Возвращено: ${fmtMoney(d.paid)}</p>
-              </div>
-            </div>
-            <div class="card-num num-minus">${fmtMoney(d.amount - d.paid)}</div>
-          </div>
-        `).join('');
-      }
-
-      // Runway
-      const totalExp = appState.transactions.filter(t => t.type === 'expense').reduce((s, x) => s + x.amount, 0);
-      const months = totalExp > 0 ? (appState.balance / totalExp).toFixed(1) : "0";
-      document.getElementById('lblRunway').innerText = months + " мес";
-    }
-
-    // --- КАТЕГОРИИ АНАЛИТИКИ ---
-    function toggleAnalyticsView(type) {
-      currentAnalyticsType = type;
-      document.getElementById('btnToggleExp').classList.toggle('active', type === 'expense');
-      document.getElementById('btnToggleInc').classList.toggle('active', type === 'income');
-      renderAnalyticsView();
-    }
-
-    function renderAnalyticsView() {
-      const container = document.getElementById('categoriesContainer');
-      const filtered = appState.transactions.filter(t => t.type === currentAnalyticsType);
-      const total = filtered.reduce((sum, t) => sum + t.amount, 0);
-
-      // Группируем по категориям
-      const map = {};
-      filtered.forEach(t => {
-        map[t.category] = (map[t.category] || 0) + t.amount;
-      });
-
-      const keys = Object.keys(map);
-      if (keys.length === 0) {
-        container.innerHTML = `<div style="text-align:center; color:var(--text-muted); font-size:13px; padding:10px;">Операций пока нет</div>`;
-        return;
-      }
-
-      const colors = ['#ff4757', '#ffa502', '#2ed573', '#1e90ff', '#9b59b6'];
-      container.innerHTML = keys.map((cat, idx) => {
-        const amt = map[cat];
-        const pct = total > 0 ? Math.round((amt / total) * 100) : 0;
-        const color = colors[idx % colors.length];
-        return `
-          <div class="cat-row">
-            <div class="cat-head">
-              <span class="cat-title">${cat}</span>
-              <span class="cat-amt">${fmtMoney(amt)} <span style="color:var(--text-muted); font-size:12px;">${pct}%</span></span>
-            </div>
-            <div class="cat-track">
-              <div class="cat-fill" style="width: ${pct}%; background: ${color};"></div>
-            </div>
+      transactions.slice(0, 10).forEach(t => {
+        const isPos = t.amount > 0;
+        const conv = (Math.abs(t.amount) / c.rate).toLocaleString('ru-RU');
+        cont.innerHTML += `
+          <div class="tx-item">
+            <div class="tx-info"><h4>${t.title}</h4><span>${t.time}</span></div>
+            <div class="tx-amount ${isPos ? 'pos' : 'neg'}">${isPos ? '+' : '−'} ${c.symbol} ${conv}</div>
           </div>
         `;
-      }).join('');
+      });
     }
 
-    // --- МОДАЛЬНЫЕ ОКНА И НАВИГАЦИЯ ---
-    function showModal(id) {
-      document.getElementById('overlay').style.display = 'flex';
-      document.querySelectorAll('.modal-sheet').forEach(m => m.style.display = 'none');
-      const el = document.getElementById(id);
-      if (el) el.style.display = 'block';
-      if (id === 'transferModal') fillTransferSelect();
+    function renderAnalyticsBreakdown() {
+      const expCont = document.getElementById('an-expense-breakdown');
+      const incCont = document.getElementById('an-income-breakdown');
+      
+      let hasExp = false, hasInc = false;
+      expCont.innerHTML = ''; incCont.innerHTML = '';
+      
+      transactions.forEach(t => {
+        if(t.amount < 0) {
+          hasExp = true;
+          expCont.innerHTML += `<div class="cat-row"><div class="cat-header"><span class="cat-name">${t.title}</span><div><span class="cat-sum">₽ ${Math.abs(t.amount)}</span></div></div><div class="cat-bar-bg"><div class="cat-bar-fill" style="width: 50%; background: #fb7185;"></div></div></div>`;
+        } else {
+          hasInc = true;
+          incCont.innerHTML += `<div class="cat-row"><div class="cat-header"><span class="cat-name">${t.title}</span><div><span class="cat-sum">₽ ${t.amount}</span></div></div><div class="cat-bar-bg"><div class="cat-bar-fill" style="width: 50%; background: #10b981;"></div></div></div>`;
+        }
+      });
+      
+      if(!hasExp) expCont.innerHTML = '<div class="empty-state">Добавьте расход для анализа</div>';
+      if(!hasInc) incCont.innerHTML = '<div class="empty-state">Добавьте доход для анализа</div>';
     }
 
-    function hideModals() {
-      document.getElementById('overlay').style.display = 'none';
+    function renderGoals() {
+      const cont = document.getElementById('goalsListContainer');
+      if(goals.length === 0) { cont.innerHTML = '<div class="empty-state">У вас пока нет целей</div>'; return; }
+      cont.innerHTML = '';
+      const c = RATES[currentCurrency];
+
+      goals.forEach(g => {
+        const pct = Math.min(100, Math.round((g.cur/g.tgt)*100)) || 0;
+        cont.innerHTML += `
+          <div class="goal-card">
+            <div class="goal-top">
+              <div class="goal-title">${g.title} (${pct}%)</div>
+              <button class="btn-deposit" onclick="openDeposit(${g.id})">+ Пополнить</button>
+            </div>
+            <div style="font-size:13px; color:var(--text-muted); margin-bottom:8px;">${c.symbol} ${(g.cur/c.rate).toLocaleString('ru-RU')} / ${(g.tgt/c.rate).toLocaleString('ru-RU')}</div>
+            <div class="cat-bar-bg"><div class="cat-bar-fill" style="width:${pct}%; background:linear-gradient(90deg, #10b981, #d97706);"></div></div>
+          </div>
+        `;
+      });
     }
 
-    function onOverlayClick(e) {
-      if (e.target.id === 'overlay') hideModals();
+    function renderDebts() {
+      const cont = document.getElementById('debtsListContainer');
+      if(debts.length === 0) { cont.innerHTML = '<div class="empty-state">Долгов нет</div>'; return; }
+      cont.innerHTML = '';
+      const c = RATES[currentCurrency];
+
+      debts.forEach(d => {
+        const isB = d.type === 'borrowed';
+        cont.innerHTML += `
+          <div class="debt-card">
+            <div>
+              <span class="debt-badge ${d.type}">${isB ? 'Я должен' : 'Мне должны'}</span>
+              <div style="font-size:14px; font-weight:600;">${d.name}</div>
+            </div>
+            <div style="font-weight:700; color:${isB ? '#fb7185' : '#34d399'};">${isB ? '−' : '+'}${c.symbol} ${(d.amount/c.rate).toLocaleString('ru-RU')}</div>
+          </div>
+        `;
+      });
     }
 
-    function switchNav(tab) {
-      document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-      document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
-      document.getElementById('tab-' + tab).classList.add('active');
-      document.getElementById('nav-' + tab).classList.add('active');
-      window.scrollTo(0, 0);
+    // ==========================================
+    // НАВИГАЦИЯ И ВЗАИМОДЕЙСТВИЕ
+    // ==========================================
+    function switchTab(tabId, btn) {
+      if(btn) {
+        document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      }
+      document.querySelectorAll('.view-content').forEach(v => v.classList.remove('active'));
+      document.getElementById(`view-${tabId}`).classList.add('active');
+      window.scrollTo(0,0);
     }
 
-    // Старт
-    document.addEventListener('DOMContentLoaded', fetchFromCloud);
+    function switchAnalyticsTab(tab) {
+      const isExp = tab === 'expense';
+      document.getElementById('btn-an-expense').classList.toggle('active', isExp);
+      document.getElementById('btn-an-income').classList.toggle('active', !isExp);
+      document.getElementById('an-expense-breakdown').style.display = isExp ? 'block' : 'none';
+      document.getElementById('an-income-breakdown').style.display = !isExp ? 'block' : 'none';
+    }
+
+    function switchCurrency(code, btn) {
+      document.querySelectorAll('.currency-pill').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentCurrency = code;
+      const rateStr = code === 'RUB' ? '1.00' : RATES[code].rate.toLocaleString('ru-RU', {minimumFractionDigits:2});
+      document.getElementById('currencyRateSub').innerText = code === 'RUB' ? '1 RUB = 1.00 ₽' : `1 ${code} = ${rateStr} ₽`;
+      updateDisplays();
+    }
+
+    // ==========================================
+    // ТАРИФ И СТРАТЕГИИ
+    // ==========================================
+    function applyPlanState() {
+      if (currentPlan === 'lite') {
+        document.getElementById('planBadge').innerText = '✨ Lite активен';
+        document.getElementById('planBadge').className = 'badge-plan pro';
+        document.getElementById('btnBuyLite').innerText = 'Отменить подписку';
+        document.getElementById('btnBuyLite').style.background = 'rgba(255,255,255,0.1)';
+        document.getElementById('proAnalyticsLock').style.display = 'none';
+        document.getElementById('proAnalyticsContent').className = '';
+        document.getElementById('advisorFundBlock').style.display = 'block';
+      } else {
+        document.getElementById('planBadge').innerText = '● Базовый';
+        document.getElementById('planBadge').className = 'badge-plan';
+        document.getElementById('btnBuyLite').innerText = 'Подключить за 179 ₽';
+        document.getElementById('btnBuyLite').style.background = '';
+        document.getElementById('proAnalyticsLock').style.display = 'flex';
+        document.getElementById('proAnalyticsContent').className = 'locked-blur';
+        document.getElementById('advisorFundBlock').style.display = 'none';
+      }
+    }
+
+    function togglePlan() {
+      if (currentPlan === 'free') {
+        currentPlan = 'lite';
+        applyPlanState();
+        switchTab('lite-strategy');
+        document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+      } else {
+        currentPlan = 'free';
+        applyPlanState();
+        alert('Тариф Lite отменен.');
+      }
+      if (window.saveStateToCloud) window.saveStateToCloud();
+    }
+
+    function handleHeaderBadge() {
+      if (currentPlan === 'lite') switchTab('lite-strategy');
+      else switchTab('plans', document.getElementById('tab-plans'));
+    }
+
+    function selectStrategy(pct, el) {
+      liteStrategyPercent = pct;
+      document.querySelectorAll('.strategy-card').forEach(c => c.classList.remove('selected'));
+      el.classList.add('selected');
+    }
+
+    function saveStrategy() {
+      alert(`Стратегия сохранена! Алгоритм будет откладывать ${liteStrategyPercent}% от каждого нового дохода.`);
+      if (window.saveStateToCloud) window.saveStateToCloud();
+      switchTab('overview', document.getElementById('tab-overview'));
+    }
+
+    // ==========================================
+    // ЛОГИКА ТРАНЗАКЦИЙ И МОДАЛОК (С СОХРАНЕНИЕМ)
+    // ==========================================
+    function openModal(id) { document.getElementById(id).classList.add('open'); }
+    function forceClose(id) { document.getElementById(id).classList.remove('open'); }
+    function closeModal(e, id) { if (e.target.id === id) forceClose(id); }
+
+    function openTxModal(type) {
+      currentTxType = type;
+      document.getElementById('txAmount').value = '';
+      document.getElementById('txDesc').value = '';
+      document.getElementById('txHeading').innerText = type === 'income' ? 'Новый доход' : 'Новый расход';
+      document.getElementById('txBtn').style.background = type === 'income' ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #f43f5e, #e11d48)';
+      
+      renderTxCategories(type);
+      openModal('txModal');
+    }
+
+    function renderTxCategories(type) {
+      const container = document.getElementById('categoryChipsContainer');
+      container.innerHTML = '';
+      const cats = type === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
+      selectedCategory = cats[0]; 
+
+      cats.forEach((cat, idx) => {
+        const chip = document.createElement('div');
+        const activeClass = type === 'income' ? 'income-active' : 'expense-active';
+        chip.className = `cat-chip ${idx === 0 ? 'active ' + activeClass : ''}`;
+        chip.innerHTML = `<span class="emoji">${cat.icon}</span><span>${cat.name}</span>`;
+        chip.onclick = () => {
+          document.querySelectorAll('.cat-chip').forEach(c => c.classList.remove('active', 'income-active', 'expense-active'));
+          chip.classList.add('active', activeClass);
+          selectedCategory = cat;
+        };
+        container.appendChild(chip);
+      });
+    }
+
+    function submitTx() {
+      const val = parseFloat(document.getElementById('txAmount').value);
+      const comment = document.getElementById('txDesc').value.trim();
+      if(!val || val <= 0) return alert('Введите корректную сумму');
+
+      const title = comment ? `${selectedCategory.icon} ${selectedCategory.name} (${comment})` : `${selectedCategory.icon} ${selectedCategory.name}`;
+      const timeStr = `Сегодня, ${new Date().getHours().toString().padStart(2,'0')}:${new Date().getMinutes().toString().padStart(2,'0')}`;
+
+      if (currentTxType === 'income') {
+        if (currentPlan === 'lite') {
+          const saved = Math.round(val * (liteStrategyPercent / 100));
+          baseBalanceRub += (val - saved);
+          advisorFundRub += saved;
+          transactions.unshift({ title: title, time: timeStr, amount: val });
+          alert(`Алгоритм удержал ${liteStrategyPercent}% (${saved} ₽) в Фонд советника по вашей стратегии.`);
+        } else {
+          baseBalanceRub += val;
+          transactions.unshift({ title: title, time: timeStr, amount: val });
+        }
+      } else {
+        baseBalanceRub -= val;
+        transactions.unshift({ title: title, time: timeStr, amount: -val });
+      }
+
+      updateDisplays();
+      if (window.saveStateToCloud) window.saveStateToCloud();
+      forceClose('txModal');
+    }
+
+    function submitGoal() {
+      const title = document.getElementById('goalTitle').value.trim();
+      const tgt = parseFloat(document.getElementById('goalTarget').value);
+      if(!title || !tgt || tgt <= 0) return alert('Заполните все поля корректно');
+      
+      goals.unshift({ id: Date.now(), title: title, tgt: tgt, cur: 0 });
+      updateDisplays();
+      if (window.saveStateToCloud) window.saveStateToCloud();
+      forceClose('goalModal');
+    }
+
+    function openDeposit(id) {
+      activeGoalId = id;
+      document.getElementById('depAmount').value = '';
+      const g = goals.find(x => x.id === id);
+      document.getElementById('depTitle').innerText = 'Пополнить: ' + g.title;
+      openModal('depositModal');
+    }
+
+    function submitDeposit() {
+      const val = parseFloat(document.getElementById('depAmount').value);
+      if(!val || val <= 0) return alert('Введите сумму');
+      if(baseBalanceRub < val) return alert('Недостаточно средств на балансе');
+
+      const g = goals.find(x => x.id === activeGoalId);
+      g.cur += val;
+      baseBalanceRub -= val;
+      
+      transactions.unshift({ title: `🎯 Копилка: ${g.title}`, time: 'Только что', amount: -val });
+      updateDisplays();
+      if (window.saveStateToCloud) window.saveStateToCloud();
+      forceClose('depositModal');
+    }
+
+    function submitDebt() {
+      const name = document.getElementById('debtName').value.trim();
+      const val = parseFloat(document.getElementById('debtAmount').value);
+      const type = document.getElementById('debtType').value;
+      if(!name || !val || val <= 0) return alert('Заполните все поля');
+
+      debts.unshift({ id: Date.now(), name: name, amount: val, type: type });
+      updateDisplays();
+      if (window.saveStateToCloud) window.saveStateToCloud();
+      forceClose('debtModal');
+    }
+
+    function openTransferFundModal() {
+      const targetSelect = document.getElementById('transferFundTarget');
+      targetSelect.innerHTML = '<option value="">Выберите цель или долг...</option>';
+      
+      const c = RATES[currentCurrency];
+      
+      if (goals.length > 0) {
+        const optgroup = document.createElement('optgroup');
+        optgroup.label = '🎯 Цели и копилки';
+        goals.forEach(g => {
+          const opt = document.createElement('option');
+          opt.value = 'goal_' + g.id;
+          opt.innerText = `${g.title} (собрано ${c.symbol} ${(g.cur/c.rate).toLocaleString('ru-RU')})`;
+          optgroup.appendChild(opt);
+        });
+        targetSelect.appendChild(optgroup);
+      }
+
+      const borrowedDebts = debts.filter(d => d.type === 'borrowed');
+      if (borrowedDebts.length > 0) {
+        const optgroup = document.createElement('optgroup');
+        optgroup.label = '🔴 Долги (вернуть)';
+        borrowedDebts.forEach(d => {
+          const opt = document.createElement('option');
+          opt.value = 'debt_' + d.id;
+          opt.innerText = `${d.name} (остаток ${c.symbol} ${(d.amount/c.rate).toLocaleString('ru-RU')})`;
+          optgroup.appendChild(opt);
+        });
+        targetSelect.appendChild(optgroup);
+      }
+
+      document.getElementById('transferFundAvailable').innerText = `${c.symbol} ${(advisorFundRub/c.rate).toLocaleString('ru-RU')}`;
+      document.getElementById('transferFundAmount').value = '';
+      
+      openModal('transferFundModal');
+    }
+
+    function submitTransferFund() {
+      const val = parseFloat(document.getElementById('transferFundAmount').value);
+      const target = document.getElementById('transferFundTarget').value;
+      
+      if (!val || val <= 0) return alert('Введите корректную сумму');
+      if (val > advisorFundRub) return alert('Недостаточно средств в фонде советника');
+      if (!target) return alert('Выберите куда перевести средства');
+
+      const [type, id] = target.split('_');
+      
+      if (type === 'goal') {
+        const g = goals.find(x => x.id == id);
+        if (g) g.cur += val;
+        transactions.unshift({ title: `🎯 Перевод из фонда в цель: ${g.title}`, time: 'Только что', amount: -val });
+      } else if (type === 'debt') {
+        const d = debts.find(x => x.id == id);
+        if (d) {
+          d.amount -= val;
+          if (d.amount <= 0) {
+             debts = debts.filter(x => x.id != id);
+          }
+        }
+        transactions.unshift({ title: `🔴 Погашение долга из фонда: ${d.name}`, time: 'Только что', amount: -val });
+      }
+
+      advisorFundRub -= val;
+      updateDisplays();
+      if (window.saveStateToCloud) window.saveStateToCloud();
+      forceClose('transferFundModal');
+    }
+
   </script>
 </body>
 </html>
