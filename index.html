@@ -361,6 +361,15 @@
         </div>
         <div class="strategy-desc">Агрессивное откладывание для максимально быстрого закрытия долгов.</div>
       </div>
+      
+      <!-- ВОТ ОН, 4-й ИСЛАМСКИЙ МЕТОД (15%) -->
+      <div class="strategy-card" id="strat-15" onclick="selectStrategy(15, this)">
+        <div class="strategy-header">
+          <span class="strategy-title">Исламская умеренность</span>
+          <span class="strategy-percent">15%</span>
+        </div>
+        <div class="strategy-desc">Баланс между личным капиталом, регулярным садака и подготовкой к закяту.</div>
+      </div>
 
       <button class="btn-submit-full" onclick="saveStrategy()">Сохранить и продолжить</button>
     </div>
@@ -386,7 +395,7 @@
     </button>
   </div>
 
-  <!-- МОДАЛКИ -->
+  <!-- МОДАЛКИ (Транзакции, Цели, Долги) -->
   <div class="modal-overlay" id="txModal" onclick="closeModal(event, 'txModal')">
     <div class="modal-sheet">
       <div class="modal-title"><span id="txHeading">Новая операция</span><button class="btn-close" onclick="forceClose('txModal')">✕</button></div>
@@ -415,13 +424,21 @@
     </div>
   </div>
 
-  <!-- ОБНОВЛЕННАЯ МОДАЛКА ДОЛГА С ВЫБОРОМ ДАТЫ -->
+  <!-- МОДАЛКА: ОПЛАТА ДОЛГА НАПРЯМУЮ С БАЛАНСА -->
+  <div class="modal-overlay" id="payDebtModal" onclick="closeModal(event, 'payDebtModal')">
+    <div class="modal-sheet">
+      <div class="modal-title"><span id="payDebtTitle">Погасить долг</span><button class="btn-close" onclick="forceClose('payDebtModal')">✕</button></div>
+      <input type="number" id="payDebtAmount" class="form-input" placeholder="Сумма (₽)">
+      <button class="btn-submit-full" onclick="submitPayDebt()">Подтвердить</button>
+    </div>
+  </div>
+
   <div class="modal-overlay" id="debtModal" onclick="closeModal(event, 'debtModal')">
     <div class="modal-sheet">
       <div class="modal-title"><span>Добавить долг</span><button class="btn-close" onclick="forceClose('debtModal')">✕</button></div>
       <select id="debtType" class="form-input" style="appearance:none; background:#1e2333;">
-        <option value="borrowed">Я взял в долг</option>
-        <option value="lent">Я дал в долг</option>
+        <option value="borrowed">Я взял в долг (деньги придут)</option>
+        <option value="lent">Я дал в долг (деньги уйдут)</option>
       </select>
       <input type="text" id="debtName" class="form-input" placeholder="Имя человека">
       <input type="number" id="debtAmount" class="form-input" placeholder="Сумма (₽)">
@@ -462,6 +479,7 @@
     var liteStrategyPercent = 18;
     var currentTxType = 'income';
     var activeGoalId = null;
+    var activeDebtId = null;
     var selectedCategory = null;
 
     const STORAGE_KEY = 'hisab_finance_state_v1';
@@ -599,26 +617,47 @@
       if(!hasInc) incCont.innerHTML = '<div class="empty-state">Добавьте доход для анализа</div>';
     }
 
+    // ИСПРАВЛЕНИЕ: ТОЧНЫЙ ПРОЦЕНТ В ЦЕЛЯХ
     function renderGoals() {
       const cont = document.getElementById('goalsListContainer');
       if(goals.length === 0) { cont.innerHTML = '<div class="empty-state">У вас пока нет целей</div>'; return; }
       cont.innerHTML = '';
       const c = RATES[currentCurrency];
+      
       goals.forEach(g => {
-        const pct = Math.min(100, Math.round((g.cur/g.tgt)*100)) || 0;
-        cont.innerHTML += `<div class="goal-card"><div class="goal-top"><div class="goal-title">${g.title} (${pct}%)</div><button class="btn-deposit" onclick="openDeposit(${g.id})">+ Пополнить</button></div><div style="font-size:13px; color:var(--text-muted); margin-bottom:8px;">${c.symbol} ${(g.cur/c.rate).toLocaleString('ru-RU')} / ${(g.tgt/c.rate).toLocaleString('ru-RU')}</div><div class="cat-bar-bg"><div class="cat-bar-fill" style="width:${pct}%; background:linear-gradient(90deg, #10b981, #d97706);"></div></div></div>`;
+        let pctRaw = (g.cur / g.tgt) * 100;
+        if (pctRaw > 100) pctRaw = 100;
+        // Если процент больше нуля, но меньше 1 (например 0.04), показываем дробь. Иначе округляем до целого.
+        let displayPct = pctRaw > 0 && pctRaw < 1 ? pctRaw.toFixed(1) : Math.floor(pctRaw);
+        
+        cont.innerHTML += `<div class="goal-card"><div class="goal-top"><div class="goal-title">${g.title} (${displayPct}%)</div><button class="btn-deposit" onclick="openDeposit(${g.id})">+ Пополнить</button></div><div style="font-size:13px; color:var(--text-muted); margin-bottom:8px;">${c.symbol} ${(g.cur/c.rate).toLocaleString('ru-RU')} / ${(g.tgt/c.rate).toLocaleString('ru-RU')}</div><div class="cat-bar-bg"><div class="cat-bar-fill" style="width:${pctRaw}%; background:linear-gradient(90deg, #10b981, #d97706);"></div></div></div>`;
       });
     }
 
+    // ИСПРАВЛЕНИЕ: КНОПКА ВОЗВРАТА В КАРТОЧКЕ ДОЛГА
     function renderDebts() {
       const cont = document.getElementById('debtsListContainer');
       if(debts.length === 0) { cont.innerHTML = '<div class="empty-state">Долгов нет</div>'; return; }
       cont.innerHTML = '';
       const c = RATES[currentCurrency];
+      
       debts.forEach(d => {
         const isB = d.type === 'borrowed';
         const dateHtml = d.date ? `<div style="font-size:11.5px; color:var(--text-muted); margin-top:2px;">📅 До: ${d.date}</div>` : '';
-        cont.innerHTML += `<div class="debt-card"><div><span class="debt-badge ${d.type}">${isB ? 'Я должен' : 'Мне должны'}</span><div style="font-size:14px; font-weight:600;">${d.name}</div>${dateHtml}</div><div style="font-weight:700; color:${isB ? '#fb7185' : '#34d399'};">${isB ? '−' : '+'}${c.symbol} ${(d.amount/c.rate).toLocaleString('ru-RU')}</div></div>`;
+        const actionBtn = `<button class="btn-deposit" style="margin-top:6px; width:100%; border-color: ${isB ? 'rgba(244,63,94,0.3)' : 'rgba(16,185,129,0.3)'}; color: ${isB ? '#fb7185' : '#34d399'}; background: ${isB ? 'rgba(244,63,94,0.1)' : 'rgba(16,185,129,0.1)'};" onclick="openPayDebt(${d.id})">${isB ? 'Вернуть деньги' : 'Забрать деньги'}</button>`;
+        
+        cont.innerHTML += `
+        <div class="debt-card">
+          <div>
+            <span class="debt-badge ${d.type}">${isB ? 'Я должен' : 'Мне должны'}</span>
+            <div style="font-size:14px; font-weight:600;">${d.name}</div>
+            ${dateHtml}
+          </div>
+          <div style="text-align: right;">
+            <div style="font-weight:700; color:${isB ? '#fb7185' : '#34d399'};">${isB ? '−' : '+'}${c.symbol} ${(d.amount/c.rate).toLocaleString('ru-RU')}</div>
+            ${actionBtn}
+          </div>
+        </div>`;
       });
     }
 
@@ -718,6 +757,7 @@
           transactions.unshift({ title: title, time: timeStr, amount: val });
         }
       } else {
+        if (val > baseBalanceRub) return alert('Недостаточно средств на балансе');
         baseBalanceRub -= val;
         transactions.unshift({ title: title, time: timeStr, amount: -val });
       }
@@ -745,6 +785,7 @@
       updateDisplays(); window.saveStateToCloud(); forceClose('depositModal');
     }
 
+    // ИСПРАВЛЕНИЕ: ДОБАВЛЕНИЕ ДОЛГА (влияет на баланс)
     function submitDebt() {
       const name = document.getElementById('debtName').value.trim();
       const val = parseFloat(document.getElementById('debtAmount').value);
@@ -759,6 +800,16 @@
         formattedDate = d.toLocaleDateString('ru-RU', {day: '2-digit', month: '2-digit', year: 'numeric'});
       }
 
+      // Если я взял в долг - деньги плюсуются к балансу. Если я дал - деньги списываются.
+      if (type === 'borrowed') {
+        baseBalanceRub += val;
+        transactions.unshift({ title: `💼 Взял в долг: ${name}`, time: 'Только что', amount: val });
+      } else {
+        if(baseBalanceRub < val) return alert('Недостаточно средств на балансе, чтобы дать в долг');
+        baseBalanceRub -= val;
+        transactions.unshift({ title: `📤 Дал в долг: ${name}`, time: 'Только что', amount: -val });
+      }
+
       debts.unshift({ id: Date.now(), name: name, amount: val, type: type, date: formattedDate });
       
       document.getElementById('debtName').value = '';
@@ -766,6 +817,44 @@
       document.getElementById('debtDate').value = '';
 
       updateDisplays(); window.saveStateToCloud(); forceClose('debtModal');
+    }
+
+    // ИСПРАВЛЕНИЕ: ОПЛАТА ДОЛГА С БАЛАНСА
+    function openPayDebt(id) {
+      activeDebtId = id;
+      document.getElementById('payDebtAmount').value = '';
+      const d = debts.find(x => x.id === id);
+      document.getElementById('payDebtTitle').innerText = (d.type === 'borrowed' ? 'Вернуть долг: ' : 'Забрать долг: ') + d.name;
+      openModal('payDebtModal');
+    }
+
+    function submitPayDebt() {
+      const val = parseFloat(document.getElementById('payDebtAmount').value);
+      if(!val || val <= 0) return alert('Введите корректную сумму');
+      
+      const d = debts.find(x => x.id === activeDebtId);
+      
+      if (val > d.amount) return alert('Сумма превышает остаток долга!');
+
+      if (d.type === 'borrowed') {
+        // Возвращаю свои деньги человеку (баланс минус)
+        if(baseBalanceRub < val) return alert('Недостаточно средств на балансе');
+        baseBalanceRub -= val;
+        d.amount -= val;
+        transactions.unshift({ title: `🔴 Возврат долга: ${d.name}`, time: 'Только что', amount: -val });
+      } else {
+        // Человек вернул мне деньги (баланс плюс)
+        baseBalanceRub += val;
+        d.amount -= val;
+        transactions.unshift({ title: `🟢 Мне вернули долг: ${d.name}`, time: 'Только что', amount: val });
+      }
+
+      // Удаляем долг, если он полностью закрыт
+      if (d.amount <= 0) {
+        debts = debts.filter(x => x.id !== activeDebtId);
+      }
+
+      updateDisplays(); window.saveStateToCloud(); forceClose('payDebtModal');
     }
 
     function openTransferFundModal() {
