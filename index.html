@@ -386,7 +386,7 @@
     </button>
   </div>
 
-  <!-- МОДАЛКИ (Транзакции, Цели, Долги) -->
+  <!-- МОДАЛКИ -->
   <div class="modal-overlay" id="txModal" onclick="closeModal(event, 'txModal')">
     <div class="modal-sheet">
       <div class="modal-title"><span id="txHeading">Новая операция</span><button class="btn-close" onclick="forceClose('txModal')">✕</button></div>
@@ -415,6 +415,7 @@
     </div>
   </div>
 
+  <!-- ОБНОВЛЕННАЯ МОДАЛКА ДОЛГА С ВЫБОРОМ ДАТЫ -->
   <div class="modal-overlay" id="debtModal" onclick="closeModal(event, 'debtModal')">
     <div class="modal-sheet">
       <div class="modal-title"><span>Добавить долг</span><button class="btn-close" onclick="forceClose('debtModal')">✕</button></div>
@@ -424,11 +425,14 @@
       </select>
       <input type="text" id="debtName" class="form-input" placeholder="Имя человека">
       <input type="number" id="debtAmount" class="form-input" placeholder="Сумма (₽)">
+      
+      <div style="font-size: 12px; color: var(--text-muted); margin-bottom: -4px;">Срок возврата (необязательно):</div>
+      <input type="date" id="debtDate" class="form-input" style="color-scheme: dark; color: var(--text-muted);">
+      
       <button class="btn-submit-full" onclick="submitDebt()">Зафиксировать</button>
     </div>
   </div>
 
-  <!-- ПЕРЕВОД ИЗ ФОНДА (С АВТОВЫЧИСЛЕНИЕМ) -->
   <div class="modal-overlay" id="transferFundModal" onclick="closeModal(event, 'transferFundModal')">
     <div class="modal-sheet">
       <div class="modal-title"><span>Перевод из фонда</span><button class="btn-close" onclick="forceClose('transferFundModal')">✕</button></div>
@@ -448,7 +452,6 @@
   </div>
 
   <script>
-    // ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
     var baseBalanceRub = 0;
     var advisorFundRub = 0;
     var transactions = [];
@@ -538,7 +541,6 @@
         const uid = tg?.initDataUnsafe?.user?.id || 0;
         if (uid === MY_ADMIN_TG_ID) {
           document.getElementById('adminPanel').style.display = 'block';
-          // Парсим параметры из ссылки aiogram
           const urlParams = new URLSearchParams(window.location.search);
           const realUsers = urlParams.get('users');
           const realLite = urlParams.get('lite');
@@ -615,7 +617,8 @@
       const c = RATES[currentCurrency];
       debts.forEach(d => {
         const isB = d.type === 'borrowed';
-        cont.innerHTML += `<div class="debt-card"><div><span class="debt-badge ${d.type}">${isB ? 'Я должен' : 'Мне должны'}</span><div style="font-size:14px; font-weight:600;">${d.name}</div></div><div style="font-weight:700; color:${isB ? '#fb7185' : '#34d399'};">${isB ? '−' : '+'}${c.symbol} ${(d.amount/c.rate).toLocaleString('ru-RU')}</div></div>`;
+        const dateHtml = d.date ? `<div style="font-size:11.5px; color:var(--text-muted); margin-top:2px;">📅 До: ${d.date}</div>` : '';
+        cont.innerHTML += `<div class="debt-card"><div><span class="debt-badge ${d.type}">${isB ? 'Я должен' : 'Мне должны'}</span><div style="font-size:14px; font-weight:600;">${d.name}</div>${dateHtml}</div><div style="font-weight:700; color:${isB ? '#fb7185' : '#34d399'};">${isB ? '−' : '+'}${c.symbol} ${(d.amount/c.rate).toLocaleString('ru-RU')}</div></div>`;
       });
     }
 
@@ -746,8 +749,22 @@
       const name = document.getElementById('debtName').value.trim();
       const val = parseFloat(document.getElementById('debtAmount').value);
       const type = document.getElementById('debtType').value;
-      if(!name || !val || val <= 0) return alert('Заполните все поля');
-      debts.unshift({ id: Date.now(), name: name, amount: val, type: type });
+      const dateVal = document.getElementById('debtDate').value;
+      
+      if(!name || !val || val <= 0) return alert('Заполните обязательные поля (Имя и Сумму)');
+      
+      let formattedDate = '';
+      if (dateVal) {
+        const d = new Date(dateVal);
+        formattedDate = d.toLocaleDateString('ru-RU', {day: '2-digit', month: '2-digit', year: 'numeric'});
+      }
+
+      debts.unshift({ id: Date.now(), name: name, amount: val, type: type, date: formattedDate });
+      
+      document.getElementById('debtName').value = '';
+      document.getElementById('debtAmount').value = '';
+      document.getElementById('debtDate').value = '';
+
       updateDisplays(); window.saveStateToCloud(); forceClose('debtModal');
     }
 
@@ -778,7 +795,6 @@
       openModal('transferFundModal');
     }
 
-    // Автовычисление Максимальной суммы
     function autoFillTransferAmount() {
       const target = document.getElementById('transferFundTarget').value;
       const input = document.getElementById('transferFundAmount');
