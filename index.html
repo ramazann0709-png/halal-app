@@ -140,6 +140,82 @@
     .cat-chip.active.income-active { background: rgba(16, 185, 129, 0.18); border-color: rgba(16, 185, 129, 0.4); color: #34d399; }
     .cat-chip.active.expense-active { background: rgba(244, 63, 94, 0.18); border-color: rgba(244, 63, 94, 0.4); color: #fb7185; }
   </style>
+
+  <!-- ==========================================
+       ПОДКЛЮЧЕНИЕ ОБЛАКА FIREBASE (CLOUD STORAGE)
+       ========================================== -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // Используем переменные окружения, если они есть
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'hisab-finance-app';
+    const firebaseConfigStr = typeof __firebase_config !== 'undefined' ? __firebase_config : '{}';
+    let firebaseConfig = {};
+    try { firebaseConfig = JSON.parse(firebaseConfigStr); } catch (e) {}
+
+    window.saveStateToCloud = async function() {}; // Заглушка, пока облако не загружено
+
+    // Проверяем, есть ли конфиг базы данных, если нет - работаем локально
+    if (firebaseConfig && firebaseConfig.apiKey) {
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
+      const db = getFirestore(app);
+
+      // Глобальная функция сохранения в облако
+      window.saveStateToCloud = async function() {
+        if (!auth.currentUser) return;
+        const docRef = doc(db, 'artifacts', appId, 'users', auth.currentUser.uid, 'financeState', 'main');
+        await setDoc(docRef, {
+          baseBalanceRub: window.baseBalanceRub,
+          advisorFundRub: window.advisorFundRub,
+          transactions: window.transactions,
+          goals: window.goals,
+          debts: window.debts,
+          liteStrategyPercent: window.liteStrategyPercent,
+          currentPlan: window.currentPlan
+        });
+      };
+
+      async function initCloud() {
+        try {
+          if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+            await signInWithCustomToken(auth, __initial_auth_token);
+          } else {
+            await signInAnonymously(auth);
+          }
+
+          const docRef = doc(db, 'artifacts', appId, 'users', auth.currentUser.uid, 'financeState', 'main');
+          
+          // Слушаем обновления в реальном времени
+          onSnapshot(docRef, (snap) => {
+            if (snap.exists()) {
+              const data = snap.data();
+              window.baseBalanceRub = data.baseBalanceRub !== undefined ? data.baseBalanceRub : 0;
+              window.advisorFundRub = data.advisorFundRub !== undefined ? data.advisorFundRub : 0;
+              window.transactions = data.transactions || [];
+              window.goals = data.goals || [];
+              window.debts = data.debts || [];
+              window.liteStrategyPercent = data.liteStrategyPercent || 18;
+              window.currentPlan = data.currentPlan || 'free';
+              
+              if (window.applyPlanState) window.applyPlanState();
+              if (window.updateDisplays) window.updateDisplays();
+            } else {
+              // Если базы еще нет (первый вход) - создаем её
+              window.saveStateToCloud();
+            }
+          }, (err) => console.error("Ошибка синхронизации:", err));
+
+        } catch (e) {
+          console.error("Ошибка авторизации облака:", e);
+        }
+      }
+
+      initCloud();
+    }
+  </script>
 </head>
 <body>
 
@@ -302,7 +378,7 @@
       <div class="advisor-fund-box" id="advisorFundBlock" style="display:none;">
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <div style="font-size:12px; font-weight:700; color:#34d399;">💰 Свободный фонд советника</div>
-          <button style="background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:#fff; font-size:11px; padding:4px 10px; border-radius:10px; cursor:pointer;" onclick="alert('Деньги из фонда можно будет перевести в цель.')">Перевести →</button>
+          <button style="background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:#fff; font-size:11px; padding:4px 10px; border-radius:10px; cursor:pointer;" onclick="openTransferFundModal()">Перевести →</button>
         </div>
         <div class="advisor-fund-val" id="fundDisplay">₽ 0.00</div>
         <div style="font-size:11px; color:var(--text-muted); line-height:1.4;">Здесь хранятся средства, сбереженные алгоритмом Lite.</div>
@@ -473,23 +549,40 @@
     </div>
   </div>
 
+  <!-- МОДАЛКА: ПЕРЕВОД ИЗ ФОНДА СОВЕТНИКА -->
+  <div class="modal-overlay" id="transferFundModal" onclick="closeModal(event, 'transferFundModal')">
+    <div class="modal-sheet">
+      <div class="modal-title"><span>Перевод из фонда</span><button class="btn-close" onclick="forceClose('transferFundModal')">✕</button></div>
+      <div style="font-size:13px; color:var(--text-muted); margin-bottom: 12px;">Доступно: <span id="transferFundAvailable" style="color:#34d399; font-weight:bold;">0 ₽</span></div>
+      <select id="transferFundTarget" class="form-input" style="appearance:none; background:#1e2333; margin-bottom: 10px;">
+        <option value="">Выберите цель или долг...</option>
+      </select>
+      <input type="number" id="transferFundAmount" class="form-input" placeholder="Сумма (₽)">
+      <button class="btn-submit-full" onclick="submitTransferFund()">Перевести</button>
+    </div>
+  </div>
+
   <script>
     // ==========================================
-    // 1. БАЗОВЫЕ ПЕРЕМЕННЫЕ (СТРОГО НОЛЬ И ПУСТО!)
+    // ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ (СВЯЗАНЫ С ОБЛАКОМ)
     // ==========================================
-    let baseBalanceRub = 0;
-    let advisorFundRub = 0;
-    let transactions = [];
-    let goals = [];
-    let debts = [];
+    var baseBalanceRub = 0;
+    var advisorFundRub = 0;
+    var transactions = [];
+    var goals = [];
+    var debts = [];
     
-    let currentCurrency = 'RUB';
-    let currentPlan = 'free'; // 'free' или 'lite'
-    let liteStrategyPercent = 18; // По умолчанию Баффет
+    var currentCurrency = 'RUB';
+    var currentPlan = 'free';
+    var liteStrategyPercent = 18;
     
-    let currentTxType = 'income';
-    let activeGoalId = null;
-    let selectedCategory = null;
+    var currentTxType = 'income';
+    var activeGoalId = null;
+    var selectedCategory = null;
+
+    // Регистрация глобальных функций для облака
+    window.updateDisplays = updateDisplays;
+    window.applyPlanState = applyPlanState;
 
     const INCOME_CATEGORIES = [
       { id: 'salary', name: 'Зарплата', icon: '🏢' },
@@ -512,9 +605,10 @@
     const RATES = { RUB: { rate: 1, symbol: '₽' }, USD: { rate: 92.5, symbol: '$' }, AED: { rate: 25.18, symbol: 'AED ' }, CNY: { rate: 12.8, symbol: '¥ ' } };
     const MY_ADMIN_TG_ID = 8774039431;
 
-    // Инициализация
+    // Инициализация интерфейса
     window.addEventListener('DOMContentLoaded', () => {
       checkAdmin();
+      applyPlanState();
       updateDisplays();
     });
 
@@ -527,7 +621,7 @@
     }
 
     // ==========================================
-    // 2. ОТРИСОВКА И ЛОГИКА
+    // ОТРИСОВКА И ЛОГИКА
     // ==========================================
     function updateDisplays() {
       const c = RATES[currentCurrency];
@@ -550,7 +644,7 @@
       const runway = exp > 0 ? (baseBalanceRub / exp).toFixed(1) : '0.0';
       document.getElementById('runwayVal').innerText = runway + ' мес.';
       
-      // Прогноз капитала (6 мес) + отчисления
+      // Прогноз капитала (6 мес)
       const monthlySavings = (inc * (liteStrategyPercent/100)) || 0;
       const forecast = baseBalanceRub + (monthlySavings * 6);
       document.getElementById('forecastCapital').innerText = `${c.symbol} ${(forecast/c.rate).toLocaleString('ru-RU', {maximumFractionDigits:0})}`;
@@ -642,7 +736,7 @@
     }
 
     // ==========================================
-    // 3. НАВИГАЦИЯ И ВЗАИМОДЕЙСТВИЕ
+    // НАВИГАЦИЯ И ВЗАИМОДЕЙСТВИЕ
     // ==========================================
     function switchTab(tabId, btn) {
       if(btn) {
@@ -672,36 +766,40 @@
     }
 
     // ==========================================
-    // 4. ТАРИФ И СТРАТЕГИИ
+    // ТАРИФ И СТРАТЕГИИ
     // ==========================================
-    function togglePlan() {
-      if (currentPlan === 'free') {
-        currentPlan = 'lite';
+    function applyPlanState() {
+      if (currentPlan === 'lite') {
         document.getElementById('planBadge').innerText = '✨ Lite активен';
         document.getElementById('planBadge').className = 'badge-plan pro';
         document.getElementById('btnBuyLite').innerText = 'Отменить подписку';
         document.getElementById('btnBuyLite').style.background = 'rgba(255,255,255,0.1)';
-        
-        // Разблокировка Pro Аналитики
         document.getElementById('proAnalyticsLock').style.display = 'none';
         document.getElementById('proAnalyticsContent').className = '';
         document.getElementById('advisorFundBlock').style.display = 'block';
-
-        // ПЕРЕХОД НА СТРАНИЦУ СТРАТЕГИИ
-        switchTab('lite-strategy');
-        document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active')); // Убираем выделение нижних кнопок
       } else {
-        currentPlan = 'free';
         document.getElementById('planBadge').innerText = '● Базовый';
         document.getElementById('planBadge').className = 'badge-plan';
         document.getElementById('btnBuyLite').innerText = 'Подключить за 179 ₽';
         document.getElementById('btnBuyLite').style.background = '';
-        
         document.getElementById('proAnalyticsLock').style.display = 'flex';
         document.getElementById('proAnalyticsContent').className = 'locked-blur';
         document.getElementById('advisorFundBlock').style.display = 'none';
+      }
+    }
+
+    function togglePlan() {
+      if (currentPlan === 'free') {
+        currentPlan = 'lite';
+        applyPlanState();
+        switchTab('lite-strategy');
+        document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+      } else {
+        currentPlan = 'free';
+        applyPlanState();
         alert('Тариф Lite отменен.');
       }
+      if (window.saveStateToCloud) window.saveStateToCloud();
     }
 
     function handleHeaderBadge() {
@@ -717,11 +815,12 @@
 
     function saveStrategy() {
       alert(`Стратегия сохранена! Алгоритм будет откладывать ${liteStrategyPercent}% от каждого нового дохода.`);
+      if (window.saveStateToCloud) window.saveStateToCloud();
       switchTab('overview', document.getElementById('tab-overview'));
     }
 
     // ==========================================
-    // 5. ЛОГИКА ТРАНЗАКЦИЙ И МОДАЛОК
+    // ЛОГИКА ТРАНЗАКЦИЙ И МОДАЛОК (С СОХРАНЕНИЕМ)
     // ==========================================
     function openModal(id) { document.getElementById(id).classList.add('open'); }
     function forceClose(id) { document.getElementById(id).classList.remove('open'); }
@@ -763,13 +862,11 @@
       const comment = document.getElementById('txDesc').value.trim();
       if(!val || val <= 0) return alert('Введите корректную сумму');
 
-      // Формируем красивый заголовок с иконкой и комментарием
       const title = comment ? `${selectedCategory.icon} ${selectedCategory.name} (${comment})` : `${selectedCategory.icon} ${selectedCategory.name}`;
       const timeStr = `Сегодня, ${new Date().getHours().toString().padStart(2,'0')}:${new Date().getMinutes().toString().padStart(2,'0')}`;
 
       if (currentTxType === 'income') {
         if (currentPlan === 'lite') {
-          // ИСПОЛЬЗУЕМ ВЫБРАННУЮ СТРАТЕГИЮ
           const saved = Math.round(val * (liteStrategyPercent / 100));
           baseBalanceRub += (val - saved);
           advisorFundRub += saved;
@@ -785,6 +882,7 @@
       }
 
       updateDisplays();
+      if (window.saveStateToCloud) window.saveStateToCloud();
       forceClose('txModal');
     }
 
@@ -795,6 +893,7 @@
       
       goals.unshift({ id: Date.now(), title: title, tgt: tgt, cur: 0 });
       updateDisplays();
+      if (window.saveStateToCloud) window.saveStateToCloud();
       forceClose('goalModal');
     }
 
@@ -817,6 +916,7 @@
       
       transactions.unshift({ title: `🎯 Копилка: ${g.title}`, time: 'Только что', amount: -val });
       updateDisplays();
+      if (window.saveStateToCloud) window.saveStateToCloud();
       forceClose('depositModal');
     }
 
@@ -828,7 +928,76 @@
 
       debts.unshift({ id: Date.now(), name: name, amount: val, type: type });
       updateDisplays();
+      if (window.saveStateToCloud) window.saveStateToCloud();
       forceClose('debtModal');
+    }
+
+    function openTransferFundModal() {
+      const targetSelect = document.getElementById('transferFundTarget');
+      targetSelect.innerHTML = '<option value="">Выберите цель или долг...</option>';
+      
+      const c = RATES[currentCurrency];
+      
+      if (goals.length > 0) {
+        const optgroup = document.createElement('optgroup');
+        optgroup.label = '🎯 Цели и копилки';
+        goals.forEach(g => {
+          const opt = document.createElement('option');
+          opt.value = 'goal_' + g.id;
+          opt.innerText = `${g.title} (собрано ${c.symbol} ${(g.cur/c.rate).toLocaleString('ru-RU')})`;
+          optgroup.appendChild(opt);
+        });
+        targetSelect.appendChild(optgroup);
+      }
+
+      const borrowedDebts = debts.filter(d => d.type === 'borrowed');
+      if (borrowedDebts.length > 0) {
+        const optgroup = document.createElement('optgroup');
+        optgroup.label = '🔴 Долги (вернуть)';
+        borrowedDebts.forEach(d => {
+          const opt = document.createElement('option');
+          opt.value = 'debt_' + d.id;
+          opt.innerText = `${d.name} (остаток ${c.symbol} ${(d.amount/c.rate).toLocaleString('ru-RU')})`;
+          optgroup.appendChild(opt);
+        });
+        targetSelect.appendChild(optgroup);
+      }
+
+      document.getElementById('transferFundAvailable').innerText = `${c.symbol} ${(advisorFundRub/c.rate).toLocaleString('ru-RU')}`;
+      document.getElementById('transferFundAmount').value = '';
+      
+      openModal('transferFundModal');
+    }
+
+    function submitTransferFund() {
+      const val = parseFloat(document.getElementById('transferFundAmount').value);
+      const target = document.getElementById('transferFundTarget').value;
+      
+      if (!val || val <= 0) return alert('Введите корректную сумму');
+      if (val > advisorFundRub) return alert('Недостаточно средств в фонде советника');
+      if (!target) return alert('Выберите куда перевести средства');
+
+      const [type, id] = target.split('_');
+      
+      if (type === 'goal') {
+        const g = goals.find(x => x.id == id);
+        if (g) g.cur += val;
+        transactions.unshift({ title: `🎯 Перевод из фонда в цель: ${g.title}`, time: 'Только что', amount: -val });
+      } else if (type === 'debt') {
+        const d = debts.find(x => x.id == id);
+        if (d) {
+          d.amount -= val;
+          if (d.amount <= 0) {
+             debts = debts.filter(x => x.id != id);
+          }
+        }
+        transactions.unshift({ title: `🔴 Погашение долга из фонда: ${d.name}`, time: 'Только что', amount: -val });
+      }
+
+      advisorFundRub -= val;
+      updateDisplays();
+      if (window.saveStateToCloud) window.saveStateToCloud();
+      forceClose('transferFundModal');
     }
 
   </script>
