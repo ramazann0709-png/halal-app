@@ -80,6 +80,7 @@
     .cat-header { display: flex; justify-content: space-between; align-items: center; font-size: 13.5px; margin-bottom: 6px; }
     .cat-name { font-weight: 500; }
     .cat-sum { font-weight: 600; color: #f3f4f6; }
+    .cat-percent { font-size: 12px; color: var(--text-muted); margin-left: 4px; }
     .cat-bar-bg { background: rgba(255, 255, 255, 0.05); height: 6px; border-radius: 3px; overflow: hidden; }
     .cat-bar-fill { height: 100%; border-radius: 3px; transition: width 0.4s ease; }
 
@@ -165,7 +166,6 @@
     <!-- 1. ОБЗОР -->
     <div id="view-overview" class="view-content active">
       
-      <!-- СЕКРЕТНАЯ ПАНЕЛЬ АДМИНА -->
       <div class="admin-panel" id="adminPanel">
         <div style="font-size: 14px; font-weight: 700; color: #38bdf8;">👑 Панель разработчика</div>
         <div class="admin-stat-row">
@@ -362,7 +362,7 @@
         <div class="strategy-desc">Агрессивное откладывание для максимально быстрого закрытия долгов.</div>
       </div>
       
-      <!-- ВОТ ОН, 4-й ИСЛАМСКИЙ МЕТОД (15%) -->
+      <!-- 4-й ИСЛАМСКИЙ МЕТОД (15%) -->
       <div class="strategy-card" id="strat-15" onclick="selectStrategy(15, this)">
         <div class="strategy-header">
           <span class="strategy-title">Исламская умеренность</span>
@@ -395,7 +395,7 @@
     </button>
   </div>
 
-  <!-- МОДАЛКИ (Транзакции, Цели, Долги) -->
+  <!-- МОДАЛКИ -->
   <div class="modal-overlay" id="txModal" onclick="closeModal(event, 'txModal')">
     <div class="modal-sheet">
       <div class="modal-title"><span id="txHeading">Новая операция</span><button class="btn-close" onclick="forceClose('txModal')">✕</button></div>
@@ -424,7 +424,6 @@
     </div>
   </div>
 
-  <!-- МОДАЛКА: ОПЛАТА ДОЛГА НАПРЯМУЮ С БАЛАНСА -->
   <div class="modal-overlay" id="payDebtModal" onclick="closeModal(event, 'payDebtModal')">
     <div class="modal-sheet">
       <div class="modal-title"><span id="payDebtTitle">Погасить долг</span><button class="btn-close" onclick="forceClose('payDebtModal')">✕</button></div>
@@ -442,10 +441,8 @@
       </select>
       <input type="text" id="debtName" class="form-input" placeholder="Имя человека">
       <input type="number" id="debtAmount" class="form-input" placeholder="Сумма (₽)">
-      
       <div style="font-size: 12px; color: var(--text-muted); margin-bottom: -4px;">Срок возврата (необязательно):</div>
       <input type="date" id="debtDate" class="form-input" style="color-scheme: dark; color: var(--text-muted);">
-      
       <button class="btn-submit-full" onclick="submitDebt()">Зафиксировать</button>
     </div>
   </div>
@@ -454,16 +451,13 @@
     <div class="modal-sheet">
       <div class="modal-title"><span>Перевод из фонда</span><button class="btn-close" onclick="forceClose('transferFundModal')">✕</button></div>
       <div style="font-size:13px; color:var(--text-muted); margin-bottom: 12px;">Доступно: <span id="transferFundAvailable" style="color:#34d399; font-weight:bold;">0 ₽</span></div>
-      
       <select id="transferFundTarget" class="form-input" style="appearance:none; background:#1e2333; margin-bottom: 10px;">
         <option value="">Выберите цель или долг...</option>
       </select>
-      
       <div style="position: relative;">
         <input type="number" id="transferFundAmount" class="form-input" placeholder="Сумма (₽)">
         <button class="btn-max" onclick="autoFillTransferAmount()">Макс.</button>
       </div>
-      
       <button class="btn-submit-full" onclick="submitTransferFund()">Перевести</button>
     </div>
   </div>
@@ -599,25 +593,79 @@
       });
     }
 
+    // НОВАЯ СИСТЕМА АНАЛИТИКИ (Правильные проценты + Группировка)
     function renderAnalyticsBreakdown() {
       const expCont = document.getElementById('an-expense-breakdown');
       const incCont = document.getElementById('an-income-breakdown');
-      let hasExp = false, hasInc = false;
-      expCont.innerHTML = ''; incCont.innerHTML = '';
+      
+      let expTotal = 0, incTotal = 0;
+      let expGroups = {};
+      let incGroups = {};
+
       transactions.forEach(t => {
         if(t.amount < 0) {
-          hasExp = true;
-          expCont.innerHTML += `<div class="cat-row"><div class="cat-header"><span class="cat-name">${t.title}</span><div><span class="cat-sum">₽ ${Math.abs(t.amount)}</span></div></div><div class="cat-bar-bg"><div class="cat-bar-fill" style="width: 50%; background: #fb7185;"></div></div></div>`;
+          const amt = Math.abs(t.amount);
+          expTotal += amt;
+          expGroups[t.title] = (expGroups[t.title] || 0) + amt;
         } else {
-          hasInc = true;
-          incCont.innerHTML += `<div class="cat-row"><div class="cat-header"><span class="cat-name">${t.title}</span><div><span class="cat-sum">₽ ${t.amount}</span></div></div><div class="cat-bar-bg"><div class="cat-bar-fill" style="width: 50%; background: #10b981;"></div></div></div>`;
+          incTotal += t.amount;
+          incGroups[t.title] = (incGroups[t.title] || 0) + t.amount;
         }
       });
-      if(!hasExp) expCont.innerHTML = '<div class="empty-state">Добавьте расход для анализа</div>';
-      if(!hasInc) incCont.innerHTML = '<div class="empty-state">Добавьте доход для анализа</div>';
+
+      expCont.innerHTML = ''; 
+      incCont.innerHTML = '';
+      const c = RATES[currentCurrency];
+
+      // Отрисовка расходов
+      const expKeys = Object.keys(expGroups).sort((a,b) => expGroups[b] - expGroups[a]);
+      if(expKeys.length === 0) {
+        expCont.innerHTML = '<div class="empty-state">Добавьте расход для анализа</div>';
+      } else {
+        expKeys.forEach(title => {
+          const amt = expGroups[title];
+          const pct = Math.round((amt / expTotal) * 100);
+          expCont.innerHTML += `
+            <div class="cat-row">
+              <div class="cat-header">
+                <span class="cat-name">${title}</span>
+                <div>
+                  <span class="cat-sum">${c.symbol} ${(amt/c.rate).toLocaleString('ru-RU')}</span>
+                  <span class="cat-percent">${pct}%</span>
+                </div>
+              </div>
+              <div class="cat-bar-bg">
+                <div class="cat-bar-fill" style="width: ${pct}%; background: #fb7185;"></div>
+              </div>
+            </div>`;
+        });
+      }
+
+      // Отрисовка доходов
+      const incKeys = Object.keys(incGroups).sort((a,b) => incGroups[b] - incGroups[a]);
+      if(incKeys.length === 0) {
+        incCont.innerHTML = '<div class="empty-state">Добавьте доход для анализа</div>';
+      } else {
+        incKeys.forEach(title => {
+          const amt = incGroups[title];
+          const pct = Math.round((amt / incTotal) * 100);
+          incCont.innerHTML += `
+            <div class="cat-row">
+              <div class="cat-header">
+                <span class="cat-name">${title}</span>
+                <div>
+                  <span class="cat-sum">${c.symbol} ${(amt/c.rate).toLocaleString('ru-RU')}</span>
+                  <span class="cat-percent">${pct}%</span>
+                </div>
+              </div>
+              <div class="cat-bar-bg">
+                <div class="cat-bar-fill" style="width: ${pct}%; background: #10b981;"></div>
+              </div>
+            </div>`;
+        });
+      }
     }
 
-    // ИСПРАВЛЕНИЕ: ТОЧНЫЙ ПРОЦЕНТ В ЦЕЛЯХ
     function renderGoals() {
       const cont = document.getElementById('goalsListContainer');
       if(goals.length === 0) { cont.innerHTML = '<div class="empty-state">У вас пока нет целей</div>'; return; }
@@ -627,14 +675,12 @@
       goals.forEach(g => {
         let pctRaw = (g.cur / g.tgt) * 100;
         if (pctRaw > 100) pctRaw = 100;
-        // Если процент больше нуля, но меньше 1 (например 0.04), показываем дробь. Иначе округляем до целого.
         let displayPct = pctRaw > 0 && pctRaw < 1 ? pctRaw.toFixed(1) : Math.floor(pctRaw);
         
         cont.innerHTML += `<div class="goal-card"><div class="goal-top"><div class="goal-title">${g.title} (${displayPct}%)</div><button class="btn-deposit" onclick="openDeposit(${g.id})">+ Пополнить</button></div><div style="font-size:13px; color:var(--text-muted); margin-bottom:8px;">${c.symbol} ${(g.cur/c.rate).toLocaleString('ru-RU')} / ${(g.tgt/c.rate).toLocaleString('ru-RU')}</div><div class="cat-bar-bg"><div class="cat-bar-fill" style="width:${pctRaw}%; background:linear-gradient(90deg, #10b981, #d97706);"></div></div></div>`;
       });
     }
 
-    // ИСПРАВЛЕНИЕ: КНОПКА ВОЗВРАТА В КАРТОЧКЕ ДОЛГА
     function renderDebts() {
       const cont = document.getElementById('debtsListContainer');
       if(debts.length === 0) { cont.innerHTML = '<div class="empty-state">Долгов нет</div>'; return; }
@@ -785,7 +831,6 @@
       updateDisplays(); window.saveStateToCloud(); forceClose('depositModal');
     }
 
-    // ИСПРАВЛЕНИЕ: ДОБАВЛЕНИЕ ДОЛГА (влияет на баланс)
     function submitDebt() {
       const name = document.getElementById('debtName').value.trim();
       const val = parseFloat(document.getElementById('debtAmount').value);
@@ -800,7 +845,6 @@
         formattedDate = d.toLocaleDateString('ru-RU', {day: '2-digit', month: '2-digit', year: 'numeric'});
       }
 
-      // Если я взял в долг - деньги плюсуются к балансу. Если я дал - деньги списываются.
       if (type === 'borrowed') {
         baseBalanceRub += val;
         transactions.unshift({ title: `💼 Взял в долг: ${name}`, time: 'Только что', amount: val });
@@ -819,7 +863,6 @@
       updateDisplays(); window.saveStateToCloud(); forceClose('debtModal');
     }
 
-    // ИСПРАВЛЕНИЕ: ОПЛАТА ДОЛГА С БАЛАНСА
     function openPayDebt(id) {
       activeDebtId = id;
       document.getElementById('payDebtAmount').value = '';
@@ -837,19 +880,16 @@
       if (val > d.amount) return alert('Сумма превышает остаток долга!');
 
       if (d.type === 'borrowed') {
-        // Возвращаю свои деньги человеку (баланс минус)
         if(baseBalanceRub < val) return alert('Недостаточно средств на балансе');
         baseBalanceRub -= val;
         d.amount -= val;
         transactions.unshift({ title: `🔴 Возврат долга: ${d.name}`, time: 'Только что', amount: -val });
       } else {
-        // Человек вернул мне деньги (баланс плюс)
         baseBalanceRub += val;
         d.amount -= val;
         transactions.unshift({ title: `🟢 Мне вернули долг: ${d.name}`, time: 'Только что', amount: val });
       }
 
-      // Удаляем долг, если он полностью закрыт
       if (d.amount <= 0) {
         debts = debts.filter(x => x.id !== activeDebtId);
       }
