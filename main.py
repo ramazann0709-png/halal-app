@@ -13,7 +13,7 @@ from aiogram.types import (
 )
 
 # 1. Вставьте ваш токен от BotFather
-BOT_TOKEN = "ВАШ_ТОКЕН_ОТ_BOTFATHER"
+BOT_TOKEN = "8969041135:AAFrflT01mB8INpgr4w6b4-zbLEafiYyFRQ"
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
