@@ -306,12 +306,12 @@
       <div class="glass-card" style="border-color:rgba(16,185,129,0.3); background:linear-gradient(145deg, rgba(16,185,129,0.1), rgba(255,255,255,0.02)); margin-bottom: 8px;">
         <div style="display:flex; justify-content:space-between; align-items:baseline;">
           <h3 style="font-size:18px; font-weight:800;">Тариф Hisab Lite</h3>
-          <span style="font-size:24px; font-weight:900; color:#34d399;">179 ₽ <span style="font-size:12px; color:var(--text-muted); font-weight:500;">/ мес</span></span>
+          <span style="font-size:24px; font-weight:900; color:#34d399;">50 ⭐️ <span style="font-size:12px; color:var(--text-muted); font-weight:500;">/ мес</span></span>
         </div>
         <p style="font-size:12.5px; color:var(--text-muted); margin:8px 0 14px; line-height:1.4;">
-          Включает умный алгоритм сбережений, который сам рассчитывает процент отчислений, графики капитала и подушку Runway.
+          Включает умный алгоритм сбережений, который сам рассчитывает процент отчислений, графики капитала и подушку Runway. Оплата внутренней валютой Telegram.
         </p>
-        <button class="btn-submit-full" id="btnBuyLite" onclick="togglePlan()">Подключить за 179 ₽</button>
+        <button class="btn-submit-full" id="btnBuyLite" onclick="initiatePayment()">Подключить за 50 ⭐️</button>
       </div>
 
       <div style="text-align:center; margin-top: 16px; margin-bottom: 8px;">
@@ -362,7 +362,6 @@
         <div class="strategy-desc">Агрессивное откладывание для максимально быстрого закрытия долгов.</div>
       </div>
       
-      <!-- 4-й ИСЛАМСКИЙ МЕТОД (15%) -->
       <div class="strategy-card" id="strat-15" onclick="selectStrategy(15, this)">
         <div class="strategy-header">
           <span class="strategy-title">Исламская умеренность</span>
@@ -469,7 +468,10 @@
     var goals = [];
     var debts = [];
     var currentCurrency = 'RUB';
+    
     var currentPlan = 'free';
+    var planExpiresAt = 0; // Время истечения подписки
+    
     var liteStrategyPercent = 18;
     var currentTxType = 'income';
     var activeGoalId = null;
@@ -480,7 +482,7 @@
     const tg = window.Telegram?.WebApp;
 
     function getSaveState() {
-      return JSON.stringify({ baseBalanceRub, advisorFundRub, transactions, goals, debts, currentPlan, liteStrategyPercent });
+      return JSON.stringify({ baseBalanceRub, advisorFundRub, transactions, goals, debts, currentPlan, planExpiresAt, liteStrategyPercent });
     }
 
     function applySaveState(dataStr) {
@@ -493,6 +495,7 @@
         goals = data.goals || [];
         debts = data.debts || [];
         currentPlan = data.currentPlan || 'free';
+        planExpiresAt = data.planExpiresAt || 0;
         liteStrategyPercent = data.liteStrategyPercent || 18;
       } catch(e) {}
     }
@@ -505,10 +508,30 @@
       }
     };
 
+    // ПРОВЕРКА ПОДПИСКИ ПО ВРЕМЕНИ И URL
+    function checkSubscriptionStatus() {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('paid') === '1') {
+        currentPlan = 'lite';
+        planExpiresAt = Date.now() + (30 * 24 * 60 * 60 * 1000); // +30 дней
+        window.saveStateToCloud();
+        alert("Оплата прошла успешно! Hisab Lite активирован на 1 месяц.");
+        window.history.replaceState(null, null, window.location.pathname);
+      }
+
+      if (currentPlan === 'lite' && planExpiresAt > 0 && Date.now() > planExpiresAt) {
+        currentPlan = 'free';
+        planExpiresAt = 0;
+        alert("Срок действия подписки Hisab Lite истек. Вы переведены на базовый тариф.");
+        window.saveStateToCloud();
+      }
+    }
+
     function loadDataAndInit() {
       const localData = localStorage.getItem(STORAGE_KEY);
       if (localData) {
         applySaveState(localData);
+        checkSubscriptionStatus();
         updateDisplays();
         applyPlanState();
       }
@@ -517,10 +540,15 @@
           if (!err && cloudData) {
             applySaveState(cloudData);
             localStorage.setItem(STORAGE_KEY, cloudData);
+            checkSubscriptionStatus();
             updateDisplays();
             applyPlanState();
           }
         });
+      } else if (!localData) {
+        checkSubscriptionStatus();
+        updateDisplays();
+        applyPlanState();
       }
     }
 
@@ -593,7 +621,6 @@
       });
     }
 
-    // НОВАЯ СИСТЕМА АНАЛИТИКИ (Правильные проценты + Группировка)
     function renderAnalyticsBreakdown() {
       const expCont = document.getElementById('an-expense-breakdown');
       const incCont = document.getElementById('an-income-breakdown');
@@ -617,7 +644,6 @@
       incCont.innerHTML = '';
       const c = RATES[currentCurrency];
 
-      // Отрисовка расходов
       const expKeys = Object.keys(expGroups).sort((a,b) => expGroups[b] - expGroups[a]);
       if(expKeys.length === 0) {
         expCont.innerHTML = '<div class="empty-state">Добавьте расход для анализа</div>';
@@ -629,19 +655,13 @@
             <div class="cat-row">
               <div class="cat-header">
                 <span class="cat-name">${title}</span>
-                <div>
-                  <span class="cat-sum">${c.symbol} ${(amt/c.rate).toLocaleString('ru-RU')}</span>
-                  <span class="cat-percent">${pct}%</span>
-                </div>
+                <div><span class="cat-sum">${c.symbol} ${(amt/c.rate).toLocaleString('ru-RU')}</span><span class="cat-percent">${pct}%</span></div>
               </div>
-              <div class="cat-bar-bg">
-                <div class="cat-bar-fill" style="width: ${pct}%; background: #fb7185;"></div>
-              </div>
+              <div class="cat-bar-bg"><div class="cat-bar-fill" style="width: ${pct}%; background: #fb7185;"></div></div>
             </div>`;
         });
       }
 
-      // Отрисовка доходов
       const incKeys = Object.keys(incGroups).sort((a,b) => incGroups[b] - incGroups[a]);
       if(incKeys.length === 0) {
         incCont.innerHTML = '<div class="empty-state">Добавьте доход для анализа</div>';
@@ -653,14 +673,9 @@
             <div class="cat-row">
               <div class="cat-header">
                 <span class="cat-name">${title}</span>
-                <div>
-                  <span class="cat-sum">${c.symbol} ${(amt/c.rate).toLocaleString('ru-RU')}</span>
-                  <span class="cat-percent">${pct}%</span>
-                </div>
+                <div><span class="cat-sum">${c.symbol} ${(amt/c.rate).toLocaleString('ru-RU')}</span><span class="cat-percent">${pct}%</span></div>
               </div>
-              <div class="cat-bar-bg">
-                <div class="cat-bar-fill" style="width: ${pct}%; background: #10b981;"></div>
-              </div>
+              <div class="cat-bar-bg"><div class="cat-bar-fill" style="width: ${pct}%; background: #10b981;"></div></div>
             </div>`;
         });
       }
@@ -676,7 +691,6 @@
         let pctRaw = (g.cur / g.tgt) * 100;
         if (pctRaw > 100) pctRaw = 100;
         let displayPct = pctRaw > 0 && pctRaw < 1 ? pctRaw.toFixed(1) : Math.floor(pctRaw);
-        
         cont.innerHTML += `<div class="goal-card"><div class="goal-top"><div class="goal-title">${g.title} (${displayPct}%)</div><button class="btn-deposit" onclick="openDeposit(${g.id})">+ Пополнить</button></div><div style="font-size:13px; color:var(--text-muted); margin-bottom:8px;">${c.symbol} ${(g.cur/c.rate).toLocaleString('ru-RU')} / ${(g.tgt/c.rate).toLocaleString('ru-RU')}</div><div class="cat-bar-bg"><div class="cat-bar-fill" style="width:${pctRaw}%; background:linear-gradient(90deg, #10b981, #d97706);"></div></div></div>`;
       });
     }
@@ -691,19 +705,7 @@
         const isB = d.type === 'borrowed';
         const dateHtml = d.date ? `<div style="font-size:11.5px; color:var(--text-muted); margin-top:2px;">📅 До: ${d.date}</div>` : '';
         const actionBtn = `<button class="btn-deposit" style="margin-top:6px; width:100%; border-color: ${isB ? 'rgba(244,63,94,0.3)' : 'rgba(16,185,129,0.3)'}; color: ${isB ? '#fb7185' : '#34d399'}; background: ${isB ? 'rgba(244,63,94,0.1)' : 'rgba(16,185,129,0.1)'};" onclick="openPayDebt(${d.id})">${isB ? 'Вернуть деньги' : 'Забрать деньги'}</button>`;
-        
-        cont.innerHTML += `
-        <div class="debt-card">
-          <div>
-            <span class="debt-badge ${d.type}">${isB ? 'Я должен' : 'Мне должны'}</span>
-            <div style="font-size:14px; font-weight:600;">${d.name}</div>
-            ${dateHtml}
-          </div>
-          <div style="text-align: right;">
-            <div style="font-weight:700; color:${isB ? '#fb7185' : '#34d399'};">${isB ? '−' : '+'}${c.symbol} ${(d.amount/c.rate).toLocaleString('ru-RU')}</div>
-            ${actionBtn}
-          </div>
-        </div>`;
+        cont.innerHTML += `<div class="debt-card"><div><span class="debt-badge ${d.type}">${isB ? 'Я должен' : 'Мне должны'}</span><div style="font-size:14px; font-weight:600;">${d.name}</div>${dateHtml}</div><div style="text-align: right;"><div style="font-weight:700; color:${isB ? '#fb7185' : '#34d399'};">${isB ? '−' : '+'}${c.symbol} ${(d.amount/c.rate).toLocaleString('ru-RU')}</div>${actionBtn}</div></div>`;
       });
     }
 
@@ -736,25 +738,42 @@
         document.getElementById('planBadge').className = 'badge-plan pro';
         document.getElementById('btnBuyLite').innerText = 'Отменить подписку';
         document.getElementById('btnBuyLite').style.background = 'rgba(255,255,255,0.1)';
+        document.getElementById('btnBuyLite').onclick = togglePlan;
+        
         document.getElementById('proAnalyticsLock').style.display = 'none';
         document.getElementById('proAnalyticsContent').className = '';
         document.getElementById('advisorFundBlock').style.display = 'block';
       } else {
         document.getElementById('planBadge').innerText = '● Базовый';
         document.getElementById('planBadge').className = 'badge-plan';
-        document.getElementById('btnBuyLite').innerText = 'Подключить за 179 ₽';
+        document.getElementById('btnBuyLite').innerText = 'Подключить за 50 ⭐️';
         document.getElementById('btnBuyLite').style.background = '';
+        document.getElementById('btnBuyLite').onclick = initiatePayment;
+        
         document.getElementById('proAnalyticsLock').style.display = 'flex';
         document.getElementById('proAnalyticsContent').className = 'locked-blur';
         document.getElementById('advisorFundBlock').style.display = 'none';
       }
     }
 
-    function togglePlan() {
-      if (currentPlan === 'free') { currentPlan = 'lite'; applyPlanState(); switchTab('lite-strategy'); document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active')); }
-      else { currentPlan = 'free'; applyPlanState(); alert('Тариф Lite отменен.'); }
-      window.saveStateToCloud();
+    function initiatePayment() {
+      if (tg) {
+        tg.sendData("buy_lite");
+      } else {
+        alert("Оплата работает только внутри Telegram");
+      }
     }
+
+    function togglePlan() {
+      if (currentPlan === 'lite') {
+        currentPlan = 'free';
+        planExpiresAt = 0;
+        applyPlanState();
+        alert('Тариф Lite отменен.');
+        window.saveStateToCloud();
+      }
+    }
+
     function handleHeaderBadge() { if (currentPlan === 'lite') switchTab('lite-strategy'); else switchTab('plans', document.getElementById('tab-plans')); }
     function selectStrategy(pct, el) { liteStrategyPercent = pct; document.querySelectorAll('.strategy-card').forEach(c => c.classList.remove('selected')); el.classList.add('selected'); }
     function saveStrategy() { window.saveStateToCloud(); switchTab('overview', document.getElementById('tab-overview')); }
@@ -855,11 +874,9 @@
       }
 
       debts.unshift({ id: Date.now(), name: name, amount: val, type: type, date: formattedDate });
-      
       document.getElementById('debtName').value = '';
       document.getElementById('debtAmount').value = '';
       document.getElementById('debtDate').value = '';
-
       updateDisplays(); window.saveStateToCloud(); forceClose('debtModal');
     }
 
@@ -874,9 +891,7 @@
     function submitPayDebt() {
       const val = parseFloat(document.getElementById('payDebtAmount').value);
       if(!val || val <= 0) return alert('Введите корректную сумму');
-      
       const d = debts.find(x => x.id === activeDebtId);
-      
       if (val > d.amount) return alert('Сумма превышает остаток долга!');
 
       if (d.type === 'borrowed') {
@@ -890,10 +905,7 @@
         transactions.unshift({ title: `🟢 Мне вернули долг: ${d.name}`, time: 'Только что', amount: val });
       }
 
-      if (d.amount <= 0) {
-        debts = debts.filter(x => x.id !== activeDebtId);
-      }
-
+      if (d.amount <= 0) { debts = debts.filter(x => x.id !== activeDebtId); }
       updateDisplays(); window.saveStateToCloud(); forceClose('payDebtModal');
     }
 
