@@ -311,6 +311,7 @@
         <p style="font-size:12.5px; color:var(--text-muted); margin:8px 0 14px; line-height:1.4;">
           Включает умный алгоритм сбережений, который сам рассчитывает процент отчислений, графики капитала и подушку Runway. Оплата внутренней валютой Telegram.
         </p>
+        <!-- Кнопка вызывает новую логику tg.openInvoice -->
         <button class="btn-submit-full" id="btnBuyLite" onclick="initiatePayment()">Подключить за 50 ⭐️</button>
       </div>
 
@@ -470,7 +471,7 @@
     var currentCurrency = 'RUB';
     
     var currentPlan = 'free';
-    var planExpiresAt = 0; // Время истечения подписки
+    var planExpiresAt = 0;
     
     var liteStrategyPercent = 18;
     var currentTxType = 'income';
@@ -508,14 +509,13 @@
       }
     };
 
-    // ПРОВЕРКА ПОДПИСКИ ПО ВРЕМЕНИ И URL
     function checkSubscriptionStatus() {
       const urlParams = new URLSearchParams(window.location.search);
       if (urlParams.get('paid') === '1') {
         currentPlan = 'lite';
-        planExpiresAt = Date.now() + (30 * 24 * 60 * 60 * 1000); // +30 дней
+        planExpiresAt = Date.now() + (30 * 24 * 60 * 60 * 1000); 
         window.saveStateToCloud();
-        alert("Оплата прошла успешно! Hisab Lite активирован на 1 месяц.");
+        alert("Оплата прошла успешно! Hisab Lite активирован на 30 дней.");
         window.history.replaceState(null, null, window.location.pathname);
       }
 
@@ -756,9 +756,26 @@
       }
     }
 
+    // НОВАЯ ЛОГИКА ОПЛАТЫ ЧЕРЕЗ OPEN INVOICE
     function initiatePayment() {
-      if (tg) {
-        tg.sendData("buy_lite");
+      const urlParams = new URLSearchParams(window.location.search);
+      const invoiceLink = urlParams.get('invoice');
+
+      if (tg && invoiceLink) {
+        tg.openInvoice(invoiceLink, function(status) {
+          if (status === 'paid') {
+            currentPlan = 'lite';
+            planExpiresAt = Date.now() + (30 * 24 * 60 * 60 * 1000); 
+            window.saveStateToCloud();
+            applyPlanState();
+            updateDisplays();
+            alert("Оплата прошла успешно! Тариф Lite активирован на 30 дней.");
+          } else if (status === 'failed') {
+            alert("Оплата не прошла или была отклонена.");
+          }
+        });
+      } else if (!invoiceLink) {
+        alert("Ссылка на оплату не найдена. Пожалуйста, перезапустите бота командой /start");
       } else {
         alert("Оплата работает только внутри Telegram");
       }
