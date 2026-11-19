@@ -132,12 +132,18 @@
     .btn-submit-full { width: 100%; padding: 14px; border-radius: 14px; border: none; font-size: 15px; font-weight: 600; color: #fff; cursor: pointer; background: linear-gradient(135deg, #10b981, #059669); margin-top: 10px; }
     
     /* Селектор категорий (чипсы) */
-    .category-chips-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 4px 0; }
+    .category-chips-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 4px 0; max-height: 220px; overflow-y: auto; padding-right: 2px; }
     .cat-chip { background: rgba(255, 255, 255, 0.04); border: 1px solid var(--glass-border); border-radius: 12px; padding: 10px 6px; color: var(--text-muted); font-size: 11.5px; font-weight: 500; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; transition: all 0.15s; text-align: center; }
     .cat-chip span.emoji { font-size: 18px; }
     .cat-chip.active.income-active { background: rgba(16, 185, 129, 0.18); border-color: rgba(16, 185, 129, 0.4); color: #34d399; }
     .cat-chip.active.expense-active { background: rgba(244, 63, 94, 0.18); border-color: rgba(244, 63, 94, 0.4); color: #fb7185; }
+    .cat-chip.add-new-chip { border-style: dashed; border-color: rgba(56, 189, 248, 0.35); color: #38bdf8; background: rgba(56, 189, 248, 0.05); }
     
+    /* Пикер эмодзи */
+    .emoji-picker-row { display: flex; gap: 8px; overflow-x: auto; padding: 4px 0; }
+    .emoji-opt { background: rgba(255,255,255,0.06); border: 1px solid var(--glass-border); border-radius: 10px; min-width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; }
+    .emoji-opt.selected { border-color: #38bdf8; background: rgba(56, 189, 248, 0.2); }
+
     .btn-max { position: absolute; right: 8px; top: 8px; background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3); padding: 6px 12px; border-radius: 10px; font-size: 12px; font-weight: 600; cursor: pointer; }
   </style>
 </head>
@@ -311,7 +317,6 @@
         <p style="font-size:12.5px; color:var(--text-muted); margin:8px 0 14px; line-height:1.4;">
           Включает умный алгоритм сбережений, который сам рассчитывает процент отчислений, графики капитала и подушку Runway. Оплата внутренней валютой Telegram.
         </p>
-        <!-- Кнопка вызывает новую логику tg.openInvoice -->
         <button class="btn-submit-full" id="btnBuyLite" onclick="initiatePayment()">Подключить за 50 ⭐️</button>
       </div>
 
@@ -407,6 +412,18 @@
     </div>
   </div>
 
+  <!-- МОДАЛКА ДОБАВЛЕНИЯ КАТЕГОРИИ -->
+  <div class="modal-overlay" id="customCatModal" onclick="closeModal(event, 'customCatModal')">
+    <div class="modal-sheet">
+      <div class="modal-title"><span id="customCatTitle">Новая категория</span><button class="btn-close" onclick="forceClose('customCatModal')">✕</button></div>
+      <input type="text" id="customCatName" class="form-input" placeholder="Название (например: Спорт, Кэшбэк)">
+      <div style="font-size: 12px; color: var(--text-muted);">Выберите иконку или впишите свою:</div>
+      <div class="emoji-picker-row" id="emojiPickerRow"></div>
+      <input type="text" id="customCatIcon" class="form-input" placeholder="Эмодзи" value="📌" maxlength="4">
+      <button class="btn-submit-full" onclick="saveNewCategory()">Добавить категорию</button>
+    </div>
+  </div>
+
   <div class="modal-overlay" id="goalModal" onclick="closeModal(event, 'goalModal')">
     <div class="modal-sheet">
       <div class="modal-title"><span>Новая цель</span><button class="btn-close" onclick="forceClose('goalModal')">✕</button></div>
@@ -468,6 +485,7 @@
     var transactions = [];
     var goals = [];
     var debts = [];
+    var customCategories = { income: [], expense: [] };
     var currentCurrency = 'RUB';
     
     var currentPlan = 'free';
@@ -483,7 +501,17 @@
     const tg = window.Telegram?.WebApp;
 
     function getSaveState() {
-      return JSON.stringify({ baseBalanceRub, advisorFundRub, transactions, goals, debts, currentPlan, planExpiresAt, liteStrategyPercent });
+      return JSON.stringify({
+        baseBalanceRub,
+        advisorFundRub,
+        transactions,
+        goals,
+        debts,
+        customCategories,
+        currentPlan,
+        planExpiresAt,
+        liteStrategyPercent
+      });
     }
 
     function applySaveState(dataStr) {
@@ -495,6 +523,7 @@
         transactions = data.transactions || [];
         goals = data.goals || [];
         debts = data.debts || [];
+        customCategories = data.customCategories || { income: [], expense: [] };
         currentPlan = data.currentPlan || 'free';
         planExpiresAt = data.planExpiresAt || 0;
         liteStrategyPercent = data.liteStrategyPercent || 18;
@@ -561,13 +590,21 @@
       { id: 'business', name: 'Бизнес', icon: '📈' },
       { id: 'gift', name: 'Подарок', icon: '🎁' }
     ];
+
     const EXPENSE_CATEGORIES = [
       { id: 'supermarket', name: 'Продукты', icon: '🛒' },
+      { id: 'snacks', name: 'Закуски', icon: '🥨' },
+      { id: 'medicine', name: 'Лекарства', icon: '💊' },
+      { id: 'clothes', name: 'Одежда', icon: '👕' },
+      { id: 'marketplaces', name: 'Маркетплейсы', icon: '📦' },
       { id: 'home', name: 'Дом/Семья', icon: '🏠' },
       { id: 'transport', name: 'Транспорт', icon: '⛽' },
       { id: 'cafe', name: 'Кафе', icon: '☕' },
-      { id: 'sadaka', name: 'Садака', icon: '🎁' }
+      { id: 'sadaka', name: 'Садака', icon: '🤲' }
     ];
+
+    const QUICK_EMOJIS = ['📌', '🏋️', '📱', '📚', '✈️', '🚗', '🎮', '💎', '👶', '🛠️', '💰', '🤝'];
+
     const RATES = { RUB: { rate: 1, symbol: '₽' }, USD: { rate: 92.5, symbol: '$' }, AED: { rate: 25.18, symbol: 'AED ' }, CNY: { rate: 12.8, symbol: '¥ ' } };
     const MY_ADMIN_TG_ID = 8774039431;
 
@@ -756,7 +793,6 @@
       }
     }
 
-    // НОВАЯ ЛОГИКА ОПЛАТЫ ЧЕРЕЗ OPEN INVOICE
     function initiatePayment() {
       const urlParams = new URLSearchParams(window.location.search);
       const invoiceLink = urlParams.get('invoice');
@@ -799,6 +835,91 @@
     function forceClose(id) { document.getElementById(id).classList.remove('open'); }
     function closeModal(e, id) { if (e.target.id === id) forceClose(id); }
 
+    // --- ЛОГИКА КАТЕГОРИЙ И СОЗДАНИЯ СВОИХ ВИДОВ ---
+    function getAllCategories(type) {
+      const base = type === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
+      const custom = (customCategories && customCategories[type]) ? customCategories[type] : [];
+      return [...base, ...custom];
+    }
+
+    function renderCategoryChips(type, preselectId = null) {
+      const container = document.getElementById('categoryChipsContainer');
+      container.innerHTML = '';
+      const cats = getAllCategories(type);
+      
+      let activeIdx = 0;
+      if (preselectId) {
+        const foundIdx = cats.findIndex(c => c.id === preselectId);
+        if (foundIdx !== -1) activeIdx = foundIdx;
+      }
+      selectedCategory = cats[activeIdx];
+
+      cats.forEach((cat, idx) => {
+        const chip = document.createElement('div');
+        const activeClass = type === 'income' ? 'income-active' : 'expense-active';
+        chip.className = `cat-chip ${idx === activeIdx ? 'active ' + activeClass : ''}`;
+        chip.innerHTML = `<span class="emoji">${cat.icon}</span><span>${cat.name}</span>`;
+        chip.onclick = () => {
+          document.querySelectorAll('.cat-chip').forEach(c => c.classList.remove('active', 'income-active', 'expense-active'));
+          chip.classList.add('active', activeClass);
+          selectedCategory = cat;
+        };
+        container.appendChild(chip);
+      });
+
+      // Кнопка "+ Своя"
+      const addChip = document.createElement('div');
+      addChip.className = 'cat-chip add-new-chip';
+      addChip.innerHTML = `<span class="emoji">➕</span><span>Своя</span>`;
+      addChip.onclick = () => openCustomCatModal();
+      container.appendChild(addChip);
+    }
+
+    function openCustomCatModal() {
+      document.getElementById('customCatTitle').innerText = currentTxType === 'income' ? 'Новый вид дохода' : 'Новый вид расхода';
+      document.getElementById('customCatName').value = '';
+      document.getElementById('customCatIcon').value = '📌';
+      
+      const picker = document.getElementById('emojiPickerRow');
+      picker.innerHTML = '';
+      QUICK_EMOJIS.forEach((em, i) => {
+        const btn = document.createElement('div');
+        btn.className = `emoji-opt ${i === 0 ? 'selected' : ''}`;
+        btn.innerText = em;
+        btn.onclick = () => {
+          document.querySelectorAll('.emoji-opt').forEach(x => x.classList.remove('selected'));
+          btn.classList.add('selected');
+          document.getElementById('customCatIcon').value = em;
+        };
+        picker.appendChild(btn);
+      });
+
+      openModal('customCatModal');
+    }
+
+    function saveNewCategory() {
+      const name = document.getElementById('customCatName').value.trim();
+      const icon = document.getElementById('customCatIcon').value.trim() || '📌';
+      
+      if (!name) return alert('Введите название категории');
+
+      if (!customCategories[currentTxType]) {
+        customCategories[currentTxType] = [];
+      }
+
+      const newCat = {
+        id: 'custom_' + Date.now(),
+        name: name,
+        icon: icon
+      };
+
+      customCategories[currentTxType].push(newCat);
+      window.saveStateToCloud();
+
+      forceClose('customCatModal');
+      renderCategoryChips(currentTxType, newCat.id);
+    }
+
     function openTxModal(type) {
       currentTxType = type;
       document.getElementById('txAmount').value = '';
@@ -806,18 +927,7 @@
       document.getElementById('txHeading').innerText = type === 'income' ? 'Новый доход' : 'Новый расход';
       document.getElementById('txBtn').style.background = type === 'income' ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #f43f5e, #e11d48)';
       
-      const container = document.getElementById('categoryChipsContainer');
-      container.innerHTML = '';
-      const cats = type === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
-      selectedCategory = cats[0]; 
-      cats.forEach((cat, idx) => {
-        const chip = document.createElement('div');
-        const activeClass = type === 'income' ? 'income-active' : 'expense-active';
-        chip.className = `cat-chip ${idx === 0 ? 'active ' + activeClass : ''}`;
-        chip.innerHTML = `<span class="emoji">${cat.icon}</span><span>${cat.name}</span>`;
-        chip.onclick = () => { document.querySelectorAll('.cat-chip').forEach(c => c.classList.remove('active', 'income-active', 'expense-active')); chip.classList.add('active', activeClass); selectedCategory = cat; };
-        container.appendChild(chip);
-      });
+      renderCategoryChips(type);
       openModal('txModal');
     }
 
