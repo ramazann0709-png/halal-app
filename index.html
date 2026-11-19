@@ -144,6 +144,14 @@
     .emoji-opt { background: rgba(255,255,255,0.06); border: 1px solid var(--glass-border); border-radius: 10px; min-width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; }
     .emoji-opt.selected { border-color: #38bdf8; background: rgba(56, 189, 248, 0.2); }
 
+    /* Банковская выписка (Вся история) */
+    .history-btn-all { background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.25); font-size: 12px; font-weight: 600; padding: 5px 12px; border-radius: 12px; cursor: pointer; }
+    .history-filters { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; background: rgba(255, 255, 255, 0.03); padding: 4px; border-radius: 12px; border: 1px solid var(--glass-border); }
+    .h-filter-btn { background: transparent; border: none; color: var(--text-muted); font-size: 12.5px; font-weight: 600; padding: 7px 0; border-radius: 9px; cursor: pointer; transition: all 0.2s; }
+    .h-filter-btn.active { background: rgba(255, 255, 255, 0.14); color: #fff; }
+    .history-date-group { font-size: 12px; font-weight: 700; color: var(--text-muted); margin: 14px 0 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .history-summary-bar { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); padding: 8px 12px; background: rgba(255,255,255,0.03); border-radius: 12px; border: 1px solid var(--glass-border); }
+
     .btn-max { position: absolute; right: 8px; top: 8px; background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3); padding: 6px 12px; border-radius: 10px; font-size: 12px; font-weight: 600; cursor: pointer; }
   </style>
 </head>
@@ -203,6 +211,7 @@
 
       <div style="display:flex; justify-content:space-between; align-items:center; margin-top: 8px;">
         <h3 style="font-size: 15px; color: var(--text-muted); font-weight: 600;">Недавние движения</h3>
+        <button class="history-btn-all" onclick="openFullHistory()">Вся история →</button>
       </div>
       <div class="glass-card" style="padding: 10px 18px;" id="txListContainer"></div>
     </div>
@@ -400,6 +409,31 @@
     </button>
   </div>
 
+  <!-- МОДАЛКА: ПОЛНАЯ ИСТОРИЯ (КАК В БАНКЕ) -->
+  <div class="modal-overlay" id="fullHistoryModal" onclick="closeModal(event, 'fullHistoryModal')">
+    <div class="modal-sheet" style="height: 88vh; max-height: 88vh;">
+      <div class="modal-title">
+        <span>История операций</span>
+        <button class="btn-close" onclick="forceClose('fullHistoryModal')">✕</button>
+      </div>
+
+      <input type="text" id="historySearchInput" class="form-input" placeholder="🔍 Поиск по названию или комментарию..." oninput="renderFullHistory()">
+
+      <div class="history-filters">
+        <button class="h-filter-btn active" id="hf-all" onclick="setHistoryFilter('all', this)">Все</button>
+        <button class="h-filter-btn" id="hf-income" onclick="setHistoryFilter('income', this)">+ Пополнения</button>
+        <button class="h-filter-btn" id="hf-expense" onclick="setHistoryFilter('expense', this)">− Траты</button>
+      </div>
+
+      <div class="history-summary-bar" id="historySummaryBar">
+        <span>Операций: 0</span>
+        <span>Баланс выборки: 0 ₽</span>
+      </div>
+
+      <div id="fullHistoryList" style="overflow-y: auto; flex: 1; padding-right: 2px;"></div>
+    </div>
+  </div>
+
   <!-- МОДАЛКИ -->
   <div class="modal-overlay" id="txModal" onclick="closeModal(event, 'txModal')">
     <div class="modal-sheet">
@@ -496,9 +530,19 @@
     var activeGoalId = null;
     var activeDebtId = null;
     var selectedCategory = null;
+    var currentHistoryFilter = 'all';
 
     const STORAGE_KEY = 'hisab_finance_state_v1';
     const tg = window.Telegram?.WebApp;
+
+    function getDateKey() {
+      return new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+    }
+
+    function getTimeStr() {
+      const now = new Date();
+      return `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+    }
 
     function getSaveState() {
       return JSON.stringify({
@@ -654,7 +698,78 @@
       const c = RATES[currentCurrency];
       transactions.slice(0, 10).forEach(t => {
         const isPos = t.amount > 0;
-        cont.innerHTML += `<div class="tx-item"><div class="tx-info"><h4>${t.title}</h4><span>${t.time}</span></div><div class="tx-amount ${isPos ? 'pos' : 'neg'}">${isPos ? '+' : '−'} ${c.symbol} ${(Math.abs(t.amount) / c.rate).toLocaleString('ru-RU')}</div></div>`;
+        const subTime = t.dateKey ? `${t.dateKey}, ${t.time}` : t.time;
+        cont.innerHTML += `<div class="tx-item"><div class="tx-info"><h4>${t.title}</h4><span>${subTime}</span></div><div class="tx-amount ${isPos ? 'pos' : 'neg'}">${isPos ? '+' : '−'} ${c.symbol} ${(Math.abs(t.amount) / c.rate).toLocaleString('ru-RU')}</div></div>`;
+      });
+    }
+
+    // --- ЛОГИКА ПОЛНОЙ ИСТОРИИ (БАНКОВСКАЯ ВЫПИСКА) ---
+    function openFullHistory() {
+      currentHistoryFilter = 'all';
+      document.getElementById('historySearchInput').value = '';
+      document.querySelectorAll('.h-filter-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('hf-all').classList.add('active');
+      renderFullHistory();
+      openModal('fullHistoryModal');
+    }
+
+    function setHistoryFilter(type, btn) {
+      currentHistoryFilter = type;
+      document.querySelectorAll('.h-filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderFullHistory();
+    }
+
+    function renderFullHistory() {
+      const listEl = document.getElementById('fullHistoryList');
+      const query = document.getElementById('historySearchInput').value.trim().toLowerCase();
+      const c = RATES[currentCurrency];
+
+      const filtered = transactions.filter(t => {
+        if (currentHistoryFilter === 'income' && t.amount < 0) return false;
+        if (currentHistoryFilter === 'expense' && t.amount > 0) return false;
+        if (query && !t.title.toLowerCase().includes(query)) return false;
+        return true;
+      });
+
+      let sumFiltered = 0;
+      filtered.forEach(t => sumFiltered += t.amount);
+      document.getElementById('historySummaryBar').innerHTML = `
+        <span>Операций: <b>${filtered.length}</b></span>
+        <span>Баланс выборки: <b style="color:${sumFiltered >= 0 ? '#34d399' : '#fb7185'}">${sumFiltered >= 0 ? '+' : ''}${c.symbol} ${(sumFiltered / c.rate).toLocaleString('ru-RU', {maximumFractionDigits: 2})}</b></span>
+      `;
+
+      if (filtered.length === 0) {
+        listEl.innerHTML = '<div class="empty-state" style="margin-top:30px;">Операции не найдены</div>';
+        return;
+      }
+
+      const groups = {};
+      filtered.forEach(t => {
+        const dKey = t.dateKey || 'Недавние операции';
+        if (!groups[dKey]) groups[dKey] = [];
+        groups[dKey].push(t);
+      });
+
+      listEl.innerHTML = '';
+      Object.keys(groups).forEach(dateLabel => {
+        listEl.innerHTML += `<div class="history-date-group">${dateLabel}</div>`;
+        let groupHtml = '<div class="glass-card" style="padding: 6px 16px; margin-bottom: 8px;">';
+        groups[dateLabel].forEach(t => {
+          const isPos = t.amount > 0;
+          groupHtml += `
+            <div class="tx-item">
+              <div class="tx-info">
+                <h4>${t.title}</h4>
+                <span>${t.time}</span>
+              </div>
+              <div class="tx-amount ${isPos ? 'pos' : 'neg'}">
+                ${isPos ? '+' : '−'} ${c.symbol} ${(Math.abs(t.amount) / c.rate).toLocaleString('ru-RU')}
+              </div>
+            </div>`;
+        });
+        groupHtml += '</div>';
+        listEl.innerHTML += groupHtml;
       });
     }
 
@@ -867,7 +982,6 @@
         container.appendChild(chip);
       });
 
-      // Кнопка "+ Своя"
       const addChip = document.createElement('div');
       addChip.className = 'cat-chip add-new-chip';
       addChip.innerHTML = `<span class="emoji">➕</span><span>Своя</span>`;
@@ -936,22 +1050,23 @@
       const comment = document.getElementById('txDesc').value.trim();
       if(!val || val <= 0) return alert('Введите корректную сумму');
       const title = comment ? `${selectedCategory.icon} ${selectedCategory.name} (${comment})` : `${selectedCategory.icon} ${selectedCategory.name}`;
-      const timeStr = `Сегодня, ${new Date().getHours().toString().padStart(2,'0')}:${new Date().getMinutes().toString().padStart(2,'0')}`;
+      const timeStr = getTimeStr();
+      const dateKey = getDateKey();
 
       if (currentTxType === 'income') {
         if (currentPlan === 'lite') {
           const saved = Math.round(val * (liteStrategyPercent / 100));
           baseBalanceRub += (val - saved);
           advisorFundRub += saved;
-          transactions.unshift({ title: title, time: timeStr, amount: val });
+          transactions.unshift({ title: title, time: timeStr, dateKey: dateKey, amount: val });
         } else {
           baseBalanceRub += val;
-          transactions.unshift({ title: title, time: timeStr, amount: val });
+          transactions.unshift({ title: title, time: timeStr, dateKey: dateKey, amount: val });
         }
       } else {
         if (val > baseBalanceRub) return alert('Недостаточно средств на балансе');
         baseBalanceRub -= val;
-        transactions.unshift({ title: title, time: timeStr, amount: -val });
+        transactions.unshift({ title: title, time: timeStr, dateKey: dateKey, amount: -val });
       }
       updateDisplays();
       window.saveStateToCloud();
@@ -973,7 +1088,7 @@
       if(baseBalanceRub < val) return alert('Недостаточно средств на балансе');
       const g = goals.find(x => x.id === activeGoalId);
       g.cur += val; baseBalanceRub -= val;
-      transactions.unshift({ title: `🎯 Копилка: ${g.title}`, time: 'Только что', amount: -val });
+      transactions.unshift({ title: `🎯 Копилка: ${g.title}`, time: getTimeStr(), dateKey: getDateKey(), amount: -val });
       updateDisplays(); window.saveStateToCloud(); forceClose('depositModal');
     }
 
@@ -993,11 +1108,11 @@
 
       if (type === 'borrowed') {
         baseBalanceRub += val;
-        transactions.unshift({ title: `💼 Взял в долг: ${name}`, time: 'Только что', amount: val });
+        transactions.unshift({ title: `💼 Взял в долг: ${name}`, time: getTimeStr(), dateKey: getDateKey(), amount: val });
       } else {
         if(baseBalanceRub < val) return alert('Недостаточно средств на балансе, чтобы дать в долг');
         baseBalanceRub -= val;
-        transactions.unshift({ title: `📤 Дал в долг: ${name}`, time: 'Только что', amount: -val });
+        transactions.unshift({ title: `📤 Дал в долг: ${name}`, time: getTimeStr(), dateKey: getDateKey(), amount: -val });
       }
 
       debts.unshift({ id: Date.now(), name: name, amount: val, type: type, date: formattedDate });
@@ -1025,11 +1140,11 @@
         if(baseBalanceRub < val) return alert('Недостаточно средств на балансе');
         baseBalanceRub -= val;
         d.amount -= val;
-        transactions.unshift({ title: `🔴 Возврат долга: ${d.name}`, time: 'Только что', amount: -val });
+        transactions.unshift({ title: `🔴 Возврат долга: ${d.name}`, time: getTimeStr(), dateKey: getDateKey(), amount: -val });
       } else {
         baseBalanceRub += val;
         d.amount -= val;
-        transactions.unshift({ title: `🟢 Мне вернули долг: ${d.name}`, time: 'Только что', amount: val });
+        transactions.unshift({ title: `🟢 Мне вернули долг: ${d.name}`, time: getTimeStr(), dateKey: getDateKey(), amount: val });
       }
 
       if (d.amount <= 0) { debts = debts.filter(x => x.id !== activeDebtId); }
@@ -1087,11 +1202,11 @@
       if (type === 'goal') {
         const g = goals.find(x => x.id == id);
         if (g) g.cur += val;
-        transactions.unshift({ title: `🎯 Перевод из фонда: ${g.title}`, time: 'Только что', amount: -val });
+        transactions.unshift({ title: `🎯 Перевод из фонда: ${g.title}`, time: getTimeStr(), dateKey: getDateKey(), amount: -val });
       } else if (type === 'debt') {
         const d = debts.find(x => x.id == id);
         if (d) { d.amount -= val; if (d.amount <= 0) debts = debts.filter(x => x.id != id); }
-        transactions.unshift({ title: `🔴 Погашение долга из фонда: ${d.name}`, time: 'Только что', amount: -val });
+        transactions.unshift({ title: `🔴 Погашение долга из фонда: ${d.name}`, time: getTimeStr(), dateKey: getDateKey(), amount: -val });
       }
       advisorFundRub -= val;
       updateDisplays(); window.saveStateToCloud(); forceClose('transferFundModal');
